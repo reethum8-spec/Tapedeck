@@ -1,16 +1,49 @@
-# React + Vite
+# 📼 TapeDeck
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**TapeDeck** is a social music scrapbook and retro cassette player built for the modern web. It brings back the nostalgia of mixtapes by letting you curate, customize, and share music in a deeply personal way.
 
-Currently, two official plugins are available:
+![TapeDeck Preview](https://github.com/reethum8-spec/Tapedeck/blob/main/src/assets/hero.png?raw=true)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
 
-## React Compiler
+- **Retro Aesthetic**: A stunning 90s-inspired UI with pixel fonts, CRT scanlines, and cassette tape animations.
+- **Custom Mixtapes**: Create and design your own cassette tapes. Choose your tape color, write a custom label, and curate tracks across Side A and Side B.
+- **Social Scrapbook & Memories**: Attach polaroids, sticky notes, and personal memories to individual tracks. When a song plays, your memories come to life.
+- **Collaborative Tapes**: Invite friends to collaborate on tapes and build playlists together.
+- **Tape Gifts**: Send a mixtape as a beautifully wrapped gift. Your friends will have to unwrap it to see what's inside!
+- **Time Capsules**: Lock your tapes so they can only be opened after a specific date.
+- **Pet Center**: Unlock and collect virtual desktop companions that vibe with you while you listen.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend**: React + Vite
+- **Styling**: TailwindCSS with custom retro CSS animations and Framer Motion for smooth transitions.
+- **Icons**: Lucide React
+- **Data Management**: LocalStorage (currently) with LZ-String for URL-based offline sharing.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Getting Started
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/reethum8-spec/Tapedeck.git
+   ```
+
+2. **Navigate to the project folder**
+   ```bash
+   cd Tapedeck
+   ```
+
+3. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. Open your browser to `http://localhost:5173` to start making mixtapes!
+
+## 🤝 Contributing
+Contributions are welcome! Feel free to open issues or submit pull requests. Let's keep the mixtape culture alive!
