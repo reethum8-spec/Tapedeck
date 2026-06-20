@@ -1,0 +1,453 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Press+Start+2P&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   ██████╗ ███████╗████████╗██████╗  ██████╗     ██╗   ██╗██╗
+   ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗    ██║   ██║██║
+   ██████╔╝█████╗     ██║   ██████╔╝██║   ██║    ██║   ██║██║
+   ██╔══██╗██╔══╝     ██║   ██╔══██╗██║   ██║    ██║   ██║██║
+   ██║  ██║███████╗   ██║   ██║  ██║╚██████╔╝    ╚██████╔╝██║
+   ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝      ╚═════╝ ╚═╝
+   TapeDeck — 90s Retro Aesthetic System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Theme Tokens ──────────────────────────────────────────────── */
+@theme {
+  /* Brand core */
+  --color-brand-bg: #0d0d0d;
+  --color-brand-accent: #5DCAA5;
+  --color-brand-dark: #1a1a1a;
+
+  /* Tape palette */
+  --color-tape-green: #1a472a;
+  --color-tape-green-label: #5DCAA5;
+  --color-tape-purple: #3d2a99;
+  --color-tape-purple-label: #CECBF6;
+  --color-tape-coral: #7a2e15;
+  --color-tape-coral-label: #F5C4B3;
+  --color-tape-blue: #0f4a85;
+  --color-tape-blue-label: #B5D4F4;
+  --color-tape-amber: #633806;
+  --color-tape-amber-label: #FAC775;
+  --color-tape-pink: #72243E;
+  --color-tape-pink-label: #F4C0D1;
+  --color-tape-slate: #444441;
+  --color-tape-slate-label: #D3D1C7;
+
+  /* Font stacks */
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: 'Space Mono', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BASE  ·  Body + CRT Scanline Overlay
+   ══════════════════════════════════════════════════════════════ */
+
+body {
+  background-color: var(--color-brand-bg);
+  color: #e0e0e0;
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* CRT / VHS horizontal scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.45;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SELECTION
+   ══════════════════════════════════════════════════════════════ */
+
+::selection {
+  background: rgba(93, 202, 165, 0.35);
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(93, 202, 165, 0.6);
+}
+
+::-moz-selection {
+  background: rgba(93, 202, 165, 0.35);
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(93, 202, 165, 0.6);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   KEYFRAMES
+   ══════════════════════════════════════════════════════════════ */
+
+/* Neon glow pulse for accent text */
+@keyframes neon-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 4px  rgba(93, 202, 165, 0.4),
+      0 0 8px  rgba(93, 202, 165, 0.3),
+      0 0 16px rgba(93, 202, 165, 0.2),
+      0 0 32px rgba(93, 202, 165, 0.1);
+  }
+  50% {
+    text-shadow:
+      0 0 8px  rgba(93, 202, 165, 0.6),
+      0 0 16px rgba(93, 202, 165, 0.5),
+      0 0 32px rgba(93, 202, 165, 0.4),
+      0 0 64px rgba(93, 202, 165, 0.2),
+      0 0 96px rgba(93, 202, 165, 0.1);
+  }
+}
+
+/* Neon box glow pulse (for borders / containers) */
+@keyframes neon-box-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 4px  rgba(93, 202, 165, 0.15),
+      0 0 8px  rgba(93, 202, 165, 0.1),
+      inset 0 0 4px rgba(93, 202, 165, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 8px  rgba(93, 202, 165, 0.3),
+      0 0 20px rgba(93, 202, 165, 0.2),
+      0 0 40px rgba(93, 202, 165, 0.1),
+      inset 0 0 8px rgba(93, 202, 165, 0.08);
+  }
+}
+
+/* Slow hovering float */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  25% {
+    transform: translateY(-4px) rotate(0.3deg);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+  75% {
+    transform: translateY(-4px) rotate(-0.3deg);
+  }
+}
+
+/* VHS tracking noise shimmer */
+@keyframes vhs-noise {
+  0%   { background-position: 0% 0%, 50% 50%; }
+  25%  { background-position: 30% 70%, 20% 40%; }
+  50%  { background-position: 60% 30%, 80% 10%; }
+  75%  { background-position: 10% 90%, 60% 70%; }
+  100% { background-position: 0% 0%, 50% 50%; }
+}
+
+/* Subtle flicker for that CRT feeling */
+@keyframes crt-flicker {
+  0%   { opacity: 0.97; }
+  5%   { opacity: 1; }
+  10%  { opacity: 0.98; }
+  15%  { opacity: 1; }
+  50%  { opacity: 1; }
+  80%  { opacity: 0.96; }
+  85%  { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+/* Tape reel spin */
+@keyframes tape-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Neon glow text ────────────────────────────────────────── */
+.glow-text {
+  color: var(--color-brand-accent);
+  animation: neon-glow 2.5s ease-in-out infinite;
+  font-family: var(--font-pixel);
+}
+
+/* ── Retro double-border panel ─────────────────────────────── */
+.retro-border {
+  border: 2px solid #333;
+  box-shadow:
+    inset 0 0 0 1px #222,
+    0 0 0 3px #1a1a1a,
+    0 0 0 4px #333,
+    0 0 12px rgba(93, 202, 165, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.retro-border:hover {
+  box-shadow:
+    inset 0 0 0 1px #333,
+    0 0 0 3px #1a1a1a,
+    0 0 0 4px var(--color-brand-accent),
+    0 0 20px rgba(93, 202, 165, 0.12),
+    0 0 40px rgba(93, 202, 165, 0.06);
+}
+
+/* ── Cassette hover float ──────────────────────────────────── */
+.cassette-hover {
+  animation: float 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* ── VHS noise grain overlay ───────────────────────────────── */
+.vhs-noise {
+  position: relative;
+}
+
+.vhs-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background:
+    repeating-radial-gradient(
+      circle at 17% 32%,
+      rgba(255, 255, 255, 0.06) 0px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-radial-gradient(
+      circle at 72% 61%,
+      rgba(255, 255, 255, 0.04) 0px,
+      transparent 1px,
+      transparent 4px
+    );
+  background-size: 3px 3px, 5px 5px;
+  animation: vhs-noise 0.8s steps(4) infinite;
+}
+
+/* ── Tape progress bar ─────────────────────────────────────── */
+.tape-progress {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #2a1a0a 0px,
+      #2a1a0a 2px,
+      #3d2810 2px,
+      #3d2810 4px,
+      #1e1208 4px,
+      #1e1208 6px
+    );
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tape-progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Pixel font label class ────────────────────────────────── */
+.font-pixel {
+  font-family: var(--font-pixel);
+  letter-spacing: 0.05em;
+}
+
+/* ── Mono font class ───────────────────────────────────────── */
+.font-retro-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   CANVAS
+   ══════════════════════════════════════════════════════════════ */
+
+canvas.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLBAR  ·  Dark Retro Theme
+   ══════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-brand-dark);
+  border-left: 1px solid #222;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-accent);
+  box-shadow: 0 0 6px rgba(93, 202, 165, 0.3);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-brand-bg);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a var(--color-brand-dark);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   DECK BUTTON  ·  Transport Controls
+   ══════════════════════════════════════════════════════════════ */
+
+.deck-btn {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 0.5rem;
+  color: #9ca3af;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Subtle inner highlight for depth */
+.deck-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+.deck-btn:hover {
+  background: #222;
+  color: #fff;
+  border-color: var(--color-brand-accent);
+  box-shadow:
+    0 0 8px rgba(93, 202, 165, 0.2),
+    0 0 20px rgba(93, 202, 165, 0.08),
+    inset 0 0 6px rgba(93, 202, 165, 0.06);
+}
+
+.deck-btn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 0 4px rgba(93, 202, 165, 0.15),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.deck-btn:focus-visible {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   EXTRAS  ·  Little Retro Touches
+   ══════════════════════════════════════════════════════════════ */
+
+/* LED indicator dot */
+.led-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-brand-accent);
+  box-shadow:
+    0 0 4px var(--color-brand-accent),
+    0 0 8px rgba(93, 202, 165, 0.4);
+  animation: neon-glow 2s ease-in-out infinite;
+}
+
+/* Tape label text style */
+.tape-label {
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  line-height: 1.6;
+}
+
+/* Embossed text effect (stamped into plastic) */
+.embossed {
+  color: rgba(255, 255, 255, 0.08);
+  text-shadow:
+    0 1px 1px rgba(255, 255, 255, 0.06),
+    0 -1px 1px rgba(0, 0, 0, 0.5);
+}
+
+/* Chrome / metallic shine strip */
+.chrome-strip {
+  background: linear-gradient(
+    180deg,
+    #444 0%,
+    #666 20%,
+    #888 40%,
+    #666 60%,
+    #444 80%,
+    #333 100%
+  );
+  height: 2px;
+}
+
+@layer utilities {
+  .perspective-1000 { perspective: 1000px; }
+  .preserve-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; }
+  .rotate-y-180 { transform: rotateY(180deg); }
+  .handwritten-font { font-family: 'Caveat', cursive; }
+}
