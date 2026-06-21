@@ -14,8 +14,8 @@
 /* ── Theme Tokens ──────────────────────────────────────────────── */
 @theme {
   /* Brand core */
-  --color-brand-bg: #0d0d0d;
-  --color-brand-accent: #5DCAA5;
+  --color-brand-bg: #121212;
+  --color-brand-accent: #7CDCB1; /* Softer, pastel teal */
   --color-brand-dark: #1a1a1a;
 
   /* Tape palette */
@@ -57,23 +57,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* CRT / VHS horizontal scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0px,
-    transparent 2px,
-    rgba(0, 0, 0, 0.12) 2px,
-    rgba(0, 0, 0, 0.12) 4px
-  );
-  mix-blend-mode: multiply;
-  opacity: 0.45;
-}
 
 
 /* ══════════════════════════════════════════════════════════════

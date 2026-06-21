@@ -30,7 +30,7 @@ const LockedTape = ({ tape }) => {
   }, [tape.lockedUntil]);
 
   return (
-    <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center p-4 border-2 border-[#333] shadow-[0_0_15px_rgba(0,0,0,0.8)_inset]">
+    <div className="absolute inset-0 z-20 bg-black/40 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center p-4 border-2 border-[#333] shadow-[0_0_15px_rgba(0,0,0,0.8)_inset]">
       <Lock size={32} className="text-gray-400 mb-2" />
       <h3 className="font-pixel text-[10px] text-white tracking-widest text-center mb-1">TIME CAPSULE</h3>
       <div className="flex items-center gap-1 text-brand-accent font-mono text-sm mt-2">
