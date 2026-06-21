@@ -60,6 +60,13 @@ export const Discover = () => {
     setTimeout(() => setNotification(''), 3000);
   };
 
+  // Auto-select the first available tape if none is selected
+  useEffect(() => {
+    if (tapes && tapes.length > 0 && !selectedTape) {
+      setSelectedTape(tapes[0].id || tapes[0]._id);
+    }
+  }, [tapes, selectedTape]);
+
   const togglePreview = (track) => {
     stopPlayback();
 

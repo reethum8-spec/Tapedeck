@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://tapedeck.onrender.com/api/auth' : 'http://localhost:5000/api/auth');
+const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api/auth';
 
 export const login = async (email, password) => {
   try {

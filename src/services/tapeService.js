@@ -6,7 +6,7 @@ localforage.config({
   storeName: 'tapes_db'
 });
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://tapedeck.onrender.com/api' : 'http://localhost:5000/api');
+const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api';
 
 const getAuthHeaders = () => {
   const userStr = localStorage.getItem('user');

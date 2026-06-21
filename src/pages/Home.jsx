@@ -116,9 +116,7 @@ export const Home = () => {
     if (tape.isGift && tape.isUnwrapped === false) {
       return; // click is handled by WrappedGift component
     }
-    startTransition(() => {
-      navigate(`/player/${tape.id}`);
-    });
+    navigate(`/player/${tape.id}`);
   };
 
   return (
@@ -229,11 +227,7 @@ export const Home = () => {
           transition={{ delay: tapes.length * 0.08 + 0.1 }}
           whileHover={{ scale: 1.05 }}
           className="w-full max-w-[320px] aspect-[3/2] border-2 border-dashed border-[#333] hover:border-brand-accent rounded-xl flex items-center justify-center cursor-pointer transition-colors duration-300 group relative overflow-hidden"
-          onClick={() => {
-            startTransition(() => {
-              navigate('/create');
-            });
-          }}
+          onClick={() => navigate('/create')}
         >
           <div className="absolute inset-0 bg-brand-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="text-gray-600 group-hover:text-brand-accent flex flex-col items-center gap-3 font-mono transition-colors relative z-10">
@@ -265,11 +259,7 @@ export const Home = () => {
                 DISCOVER MUSIC
               </button>
               <button
-                onClick={() => {
-                  startTransition(() => {
-                    navigate('/create');
-                  });
-                }}
+                onClick={() => navigate('/create')}
                 className="px-6 py-2 border border-[#444] text-gray-400 text-xs font-bold tracking-wider rounded hover:border-brand-accent hover:text-brand-accent transition-colors"
               >
                 CREATE TAPE
