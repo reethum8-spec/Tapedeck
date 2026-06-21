@@ -92,6 +92,7 @@ const WrappedGift = ({ tape, onUnwrap }) => {
 };
 
 export const Home = () => {
+  const navigate = useNavigate();
   const { tapes, deleteTape, updateTape } = useTape();
   const { user } = useAuth();
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -179,7 +180,7 @@ export const Home = () => {
               {/* Track count badge and Action Buttons */}
               <div className="mt-2 flex justify-between items-center px-4">
                 <span className="text-[10px] font-mono text-gray-600 tracking-widest flex items-center gap-2">
-                  {tape.sideA.length + tape.sideB.length} TRACKS
+                  {((tape.sideA || []).length + (tape.sideB || []).length)} TRACKS
                   {tape.isGift && tape.isUnwrapped && <Gift size={10} className="text-pink-400" title="Gift" />}
                   {tape.isCollaborative && <Users size={10} className="text-brand-accent" title="Collaborative" />}
                 </span>

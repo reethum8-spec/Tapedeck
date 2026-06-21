@@ -7,6 +7,15 @@ const TapeContext = createContext();
 
 export const useTape = () => useContext(TapeContext);
 
+const ensureArrays = (tape) => {
+  if (!tape) return tape;
+  return {
+    ...tape,
+    sideA: Array.isArray(tape.sideA) ? tape.sideA : [],
+    sideB: Array.isArray(tape.sideB) ? tape.sideB : []
+  };
+};
+
 export const TapeProvider = ({ children }) => {
   const [tapes, setTapes] = useState([]);
   const [dbLoaded, setDbLoaded] = useState(false);
@@ -39,7 +48,7 @@ export const TapeProvider = ({ children }) => {
       try {
         await tapeService.initDB();
         const loadedTapes = await tapeService.getTapes();
-        setTapes(loadedTapes);
+        setTapes((loadedTapes || []).map(ensureArrays));
       } catch (err) {
         console.error("Error loading tapes:", err);
       } finally {
@@ -75,7 +84,7 @@ export const TapeProvider = ({ children }) => {
   const addTape = async (tape) => {
     try {
       const savedTape = await tapeService.createTape(tape);
-      setTapes(prev => [...prev, savedTape]);
+      setTapes(prev => [...prev, ensureArrays(savedTape)]);
       return savedTape;
     } catch (err) {
       console.error(err);
@@ -84,7 +93,7 @@ export const TapeProvider = ({ children }) => {
   };
 
   const updateTape = async (id, updates) => {
-    setTapes(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    setTapes(prev => prev.map(t => t.id === id ? ensureArrays({ ...t, ...updates }) : t));
     try {
       await tapeService.updateTape(id, updates);
     } catch (err) {
@@ -120,7 +129,9 @@ export const TapeProvider = ({ children }) => {
       
       setTapes(prev => prev.map(t => {
         if (t.id === tapeId) {
-          return { ...t, [side === 'A' ? 'sideA' : 'sideB']: [...t[side === 'A' ? 'sideA' : 'sideB'], savedSong] };
+          const sideKey = side === 'A' ? 'sideA' : 'sideB';
+          const currentSideSongs = Array.isArray(t[sideKey]) ? t[sideKey] : [];
+          return ensureArrays({ ...t, [sideKey]: [...currentSideSongs, savedSong] });
         }
         return t;
       }));
@@ -134,10 +145,13 @@ export const TapeProvider = ({ children }) => {
     setTapes(prev => prev.map(t => {
       if (t.id === tapeId) {
         const targetSide = side === 'A' ? 'sideA' : 'sideB';
-        const updatedSide = [...t[targetSide]];
-        songId = updatedSide[trackIndex]._id || updatedSide[trackIndex].id;
-        updatedSide.splice(trackIndex, 1);
-        return { ...t, [targetSide]: updatedSide };
+        const sideSongs = Array.isArray(t[targetSide]) ? t[targetSide] : [];
+        const updatedSide = [...sideSongs];
+        songId = updatedSide[trackIndex]?._id || updatedSide[trackIndex]?.id;
+        if (songId) {
+          updatedSide.splice(trackIndex, 1);
+        }
+        return ensureArrays({ ...t, [targetSide]: updatedSide });
       }
       return t;
     }));
@@ -155,10 +169,13 @@ export const TapeProvider = ({ children }) => {
     let songId = null;
     setTapes(prev => prev.map(t => {
       if (t.id === tapeId) {
-        const updatedSide = [...t[side]];
-        songId = updatedSide[trackIndex]._id || updatedSide[trackIndex].id;
-        updatedSide[trackIndex] = { ...updatedSide[trackIndex], memory };
-        return { ...t, [side]: updatedSide };
+        const sideSongs = Array.isArray(t[side]) ? t[side] : [];
+        const updatedSide = [...sideSongs];
+        songId = updatedSide[trackIndex]?._id || updatedSide[trackIndex]?.id;
+        if (songId) {
+          updatedSide[trackIndex] = { ...updatedSide[trackIndex], memory };
+        }
+        return ensureArrays({ ...t, [side]: updatedSide });
       }
       return t;
     }));
@@ -192,7 +209,8 @@ export const TapeProvider = ({ children }) => {
   };
 
   const playTrack = useCallback((tape, trackIndex, side = 'A') => {
-    const tracks = side === 'A' ? tape.sideA : tape.sideB;
+    const safeTape = ensureArrays(tape);
+    const tracks = side === 'A' ? safeTape.sideA : safeTape.sideB;
     const track = tracks[trackIndex];
     
     if (!track) return;
@@ -208,7 +226,7 @@ export const TapeProvider = ({ children }) => {
       activeBlobUrlRef.current = null;
     }
 
-    setCurrentTape(tape);
+    setCurrentTape(safeTape);
     setCurrentTrackIndex(trackIndex);
     setCurrentSide(side);
     setProgress(0);
@@ -233,11 +251,11 @@ export const TapeProvider = ({ children }) => {
       onend: () => {
         if (isLoopingRef.current) {
           // Replay the exact same track
-          playTrack(tape, trackIndex, side);
+          playTrack(safeTape, trackIndex, side);
         } else {
           const nextIdx = trackIndex + 1;
           if (nextIdx < tracks.length) {
-            playTrack(tape, nextIdx, side);
+            playTrack(safeTape, nextIdx, side);
           } else {
             setIsPlaying(false);
             setProgress(0);

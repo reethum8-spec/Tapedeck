@@ -8,7 +8,7 @@ export const BackgroundVinyl = () => {
   const velocity = useRef(0);
 
   // Get current track for album art
-  const currentTracks = currentTape ? (currentSide === 'A' ? currentTape.sideA : currentTape.sideB) : [];
+  const currentTracks = currentTape ? (currentSide === 'A' ? (currentTape.sideA || []) : (currentTape.sideB || [])) : [];
   const currentTrack = nowPlayingVisible ? currentTracks[currentTrackIndex] : null;
 
   useAnimationFrame((t, delta) => {

@@ -14,7 +14,7 @@ export const Layout = ({ children }) => {
   const { logout } = useAuth();
   const location = useLocation();
 
-  const currentTracks = currentTape ? (currentSide === 'A' ? currentTape.sideA : currentTape.sideB) : [];
+  const currentTracks = currentTape ? (currentSide === 'A' ? (currentTape.sideA || []) : (currentTape.sideB || [])) : [];
   const currentTrack = currentTracks[currentTrackIndex];
 
   const handleProgressClick = (e) => {

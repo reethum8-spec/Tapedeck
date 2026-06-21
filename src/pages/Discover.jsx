@@ -192,10 +192,13 @@ export const Discover = () => {
     const tape = tapes.find(t => t.id === selectedTape);
     if (!tape) return;
 
-    if (tape.sideA.length < 5) {
+    const sideA = tape.sideA || [];
+    const sideB = tape.sideB || [];
+
+    if (sideA.length < 5) {
       addSongToTape(tape.id, 'A', track);
       showNotification(`Added to ${tape.name} (Side A)`);
-    } else if (tape.sideB.length < 5) {
+    } else if (sideB.length < 5) {
       addSongToTape(tape.id, 'B', track);
       showNotification(`Added to ${tape.name} (Side B)`);
     } else {
@@ -277,7 +280,7 @@ export const Discover = () => {
               <option value="" disabled>TARGET TAPE...</option>
               {tapes.map(t => (
                 <option key={t.id} value={t.id}>
-                  {t.name} ({t.sideA.length + t.sideB.length}/10)
+                  {t.name} ({(t.sideA || []).length + (t.sideB || []).length}/10)
                 </option>
               ))}
             </select>

@@ -33,7 +33,7 @@ const MemoryCard = ({ tape, updateTape }) => {
               {tape.name}
             </div>
             <div className="text-gray-500 text-xs mt-1">
-              {tape.sideA.length + tape.sideB.length} TRACKS
+              {((tape.sideA || []).length + (tape.sideB || []).length)} TRACKS
             </div>
           </div>
         </div>

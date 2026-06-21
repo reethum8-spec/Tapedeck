@@ -72,7 +72,7 @@ export const Player = () => {
     );
   }
 
-  const tracks = activeSide === 'A' ? tape.sideA : tape.sideB;
+  const tracks = activeSide === 'A' ? (tape.sideA || []) : (tape.sideB || []);
   const isThisTape = currentTape?.id === id && currentSide === activeSide;
 
   const handleTrackClick = (index) => playTrack(tape, index, activeSide);
