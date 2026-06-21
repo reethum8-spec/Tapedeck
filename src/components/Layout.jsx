@@ -52,7 +52,7 @@ export const Layout = ({ children }) => {
               <Link
                 key={link.to}
                 to={link.to}
-                className={`px-3 py-2 text-[10px] sm:text-xs font-mono tracking-widest transition-all duration-200 rounded ${
+                className={`px-3 py-2 text-[10px] sm:text-xs font-mono tracking-widest transition-colors duration-200 rounded ${
                   location.pathname === link.to
                     ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/30'
                     : 'text-gray-500 hover:text-white hover:bg-white/5'
@@ -63,7 +63,7 @@ export const Layout = ({ children }) => {
             ))}
             <Link
               to="/create"
-              className="hidden sm:inline-block ml-2 px-4 py-2 text-xs font-mono tracking-widest border border-brand-accent text-brand-accent hover:bg-brand-accent hover:text-black transition-all duration-200 rounded"
+              className="hidden sm:inline-block ml-2 px-4 py-2 text-xs font-mono tracking-widest border border-brand-accent text-brand-accent hover:bg-brand-accent hover:text-black transition-colors duration-200 rounded"
             >
               + NEW TAPE
             </Link>
