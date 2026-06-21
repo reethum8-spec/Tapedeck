@@ -17,7 +17,19 @@ const playlistSchema = new mongoose.Schema({
   },
   cassetteColor: {
     type: String,
-    default: '#f1c40f',
+    default: '#1a472a',
+  },
+  color: {
+    type: String,
+    default: '#1a472a',
+  },
+  labelColor: {
+    type: String,
+    default: '#5DCAA5',
+  },
+  sticker: {
+    type: String,
+    default: '🎵',
   },
   coverImage: {
     type: String,
