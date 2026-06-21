@@ -77,29 +77,26 @@ export const tapeService = {
       await localforage.setItem('tapedeck_tapes', tapes);
     }
 
-    try {
-      const res = await fetch(`${API_URL}/playlists`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(tapeData) // Send original data without local IDs
-      });
+    // Fire and forget
+    fetch(`${API_URL}/playlists`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(tapeData)
+    }).then(async res => {
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const json = await res.json();
         if (json.success) {
-          // Update local with server's real tape (has _id, no isLocalOnly)
           const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
           const index = tapes.findIndex(t => t.id === newTape.id);
           if (index !== -1) {
             tapes[index] = { ...json.data, id: json.data.id || json.data._id };
             await localforage.setItem('tapedeck_tapes', tapes);
           }
-          return tapes[index] || json.data;
         }
       }
-    } catch (err) {
-      console.warn("Backend create failed, saved locally.", err);
-    }
+    }).catch(err => console.warn("Backend create failed, saved locally.", err));
+
     return newTape;
   },
 
@@ -111,15 +108,13 @@ export const tapeService = {
       await localforage.setItem('tapedeck_tapes', tapes);
     }
 
-    try {
-      await fetch(`${API_URL}/playlists/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updates)
-      });
-    } catch (err) {
-      console.warn("Backend update failed, saved locally.", err);
-    }
+    // Fire and forget
+    fetch(`${API_URL}/playlists/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates)
+    }).catch(err => console.warn("Backend update failed, saved locally.", err));
+
     return tapes[index];
   },
 
@@ -128,12 +123,12 @@ export const tapeService = {
     const filtered = tapes.filter(t => t.id !== id && t._id !== id);
     await localforage.setItem('tapedeck_tapes', filtered);
 
-    try {
-      await fetch(`${API_URL}/playlists/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-    } catch (err) {}
+    // Fire and forget
+    fetch(`${API_URL}/playlists/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    }).catch(err => {});
+    
     return { success: true };
   },
 

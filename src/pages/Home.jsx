@@ -266,12 +266,10 @@ export const Home = () => {
               </button>
               <button
                 onClick={() => {
-            import('react').then(({ startTransition }) => {
-              startTransition(() => {
-                navigate('/create');
-              });
-            });
-          }}
+                  startTransition(() => {
+                    navigate('/create');
+                  });
+                }}
                 className="px-6 py-2 border border-[#444] text-gray-400 text-xs font-bold tracking-wider rounded hover:border-brand-accent hover:text-brand-accent transition-colors"
               >
                 CREATE TAPE
