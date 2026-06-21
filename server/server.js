@@ -14,6 +14,10 @@ app.use(express.json({ limit: '50mb' })); // Support large base64 images
 app.use(cors());
 
 // Routes
+app.get('/', (req, res) => {
+  res.json({ message: 'TapeDeck API is running!' });
+});
+
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/playlists', require('./routes/playlistRoutes'));
 app.use('/api/songs', require('./routes/songRoutes'));
