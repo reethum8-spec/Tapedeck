@@ -33,8 +33,14 @@ export const tapeService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(tapeData)
     });
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error(`Server returned non-JSON response. Ensure the backend is running. URL: ${API_URL}`);
+    }
+
     const json = await res.json();
-    if (!json.success) throw new Error(json.error);
+    if (!res.ok || !json.success) throw new Error(json.error || `Error ${res.status}`);
     return json.data;
   },
 
@@ -44,8 +50,14 @@ export const tapeService = {
       headers: getAuthHeaders(),
       body: JSON.stringify(updates)
     });
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error(`Server returned non-JSON response.`);
+    }
+
     const json = await res.json();
-    if (!json.success) throw new Error(json.error);
+    if (!res.ok || !json.success) throw new Error(json.error || `Error ${res.status}`);
     return json.data;
   },
 
@@ -54,8 +66,14 @@ export const tapeService = {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
+    
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error(`Server returned non-JSON response.`);
+    }
+
     const json = await res.json();
-    if (!json.success) throw new Error(json.error);
+    if (!res.ok || !json.success) throw new Error(json.error || `Error ${res.status}`);
     return json.data;
   },
 

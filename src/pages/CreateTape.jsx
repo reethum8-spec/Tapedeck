@@ -25,10 +25,19 @@ export const CreateTape = () => {
     sideB: [],
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) return;
-    addTape(previewTape);
-    navigate('/');
+    try {
+      const result = await addTape(previewTape);
+      if (result) {
+        navigate('/');
+      } else {
+        alert('Failed to save tape. Please try again or refresh the page.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred: ' + err.message);
+    }
   };
 
   return (

@@ -4,28 +4,38 @@ export const login = async (email, password) => {
   const response = await fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
   });
   
-  const json = await response.json();
-  if (!json.success) throw new Error(json.error);
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error(`Server returned non-JSON response.`);
+  }
+
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.error || 'Failed to login');
   
-  localStorage.setItem('user', JSON.stringify(json.data));
-  return json.data;
+  localStorage.setItem('user', JSON.stringify(data.data));
+  return data.data;
 };
 
-export const register = async (name, email, password) => {
+export const register = async (name, email, password, tapeTag) => {
   const response = await fetch(`${API_URL}/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password })
+    body: JSON.stringify({ name, email, password, tapeTag }),
   });
   
-  const json = await response.json();
-  if (!json.success) throw new Error(json.error);
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error(`Server returned non-JSON response.`);
+  }
+
+  const data = await response.json();
+  if (!response.ok || !data.success) throw new Error(data.error || 'Failed to register');
   
-  localStorage.setItem('user', JSON.stringify(json.data));
-  return json.data;
+  localStorage.setItem('user', JSON.stringify(data.data));
+  return data.data;
 };
 
 export const logout = async () => {
