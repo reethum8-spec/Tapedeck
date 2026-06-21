@@ -77,22 +77,19 @@ const ProtectedRoute = ({ children }) => {
 const AnimatedRoutes = () => {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/auth" element={<ProtectedRoute><Auth /></ProtectedRoute>} />
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/create" element={<ProtectedRoute><CreateTape /></ProtectedRoute>} />
-        <Route path="/edit/:id" element={<ProtectedRoute><EditTape /></ProtectedRoute>} />
-        <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-        <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/pet-center" element={<ProtectedRoute><PetCenter /></ProtectedRoute>} />
-        <Route path="/player/:id" element={<ProtectedRoute><Player /></ProtectedRoute>} />
-        {/* Fallback route for unknown paths under the repo base */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AnimatePresence>
+    <Routes location={location} key={location.pathname}>
+      <Route path="/auth" element={<ProtectedRoute><Auth /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/create" element={<ProtectedRoute><CreateTape /></ProtectedRoute>} />
+      <Route path="/edit/:id" element={<ProtectedRoute><EditTape /></ProtectedRoute>} />
+      <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
+      <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/pet-center" element={<ProtectedRoute><PetCenter /></ProtectedRoute>} />
+      <Route path="/player/:id" element={<ProtectedRoute><Player /></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 
