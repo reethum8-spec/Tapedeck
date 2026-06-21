@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { TapeProvider } from './context/TapeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Home } from './pages/Home';
@@ -100,7 +100,8 @@ function App() {
   return (
     <AuthProvider>
       <TapeProvider>
-        <Router basename={import.meta.env.BASE_URL}>
+        {/* HashRouter works better for GitHub Pages (no server-side routing required) */}
+        <Router>
           <ImportHandler />
           <Layout>
             <AnimatedRoutes />
