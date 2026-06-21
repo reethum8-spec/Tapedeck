@@ -106,9 +106,13 @@ const ImportHandler = () => {
       finalTape.isCollaborative = true;
     }
     
-    await addTape(finalTape);
+    const saved = await addTape(finalTape);
     setPendingTape(null);
-    navigate('/');
+    if (saved && saved.id) {
+      navigate(`/player/${saved.id}`);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleUnwrap = () => {
