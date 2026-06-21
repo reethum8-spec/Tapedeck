@@ -14,32 +14,23 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
   if (!isOpen || !tape) return null;
 
   const handleGenerate = () => {
-    // Check if the tape has a server ID (non-UUID length 24 hex)
-    const isServerSynced = tape.id && !tape.isLocalOnly && !tape.id.includes('-');
+    const exportTape = { ...tape };
+    delete exportTape.id;
 
-    if (isServerSynced) {
-      const link = `${window.location.origin}/?share=${tape.id}&mode=${mode}&sender=${encodeURIComponent(senderName || '')}`;
-      setGeneratedLink(link);
+    if (mode === 'gift') {
+      exportTape.isGift = true;
+      exportTape.isUnwrapped = false;
+      exportTape.giftSender = senderName || 'A Friend';
     } else {
-      // Fallback to long URL format if offline/unsynced
-      const exportTape = { ...tape };
-      delete exportTape.id;
-
-      if (mode === 'gift') {
-        exportTape.isGift = true;
-        exportTape.isUnwrapped = false;
-        exportTape.giftSender = senderName || 'A Friend';
-      } else {
-        exportTape.isCollaborative = true;
-        exportTape.contributors = [user?.tapeTag || 'Unknown'];
-      }
-
-      const jsonString = JSON.stringify(exportTape);
-      const compressed = LZString.compressToEncodedURIComponent(jsonString);
-      const link = `${window.location.origin}/?import=${compressed}`;
-      
-      setGeneratedLink(link);
+      exportTape.isCollaborative = true;
+      exportTape.contributors = [user?.tapeTag || 'Unknown'];
     }
+
+    const jsonString = JSON.stringify(exportTape);
+    const compressed = LZString.compressToEncodedURIComponent(jsonString);
+    const link = `${window.location.origin}/?import=${compressed}`;
+    
+    setGeneratedLink(link);
     setCopied(false);
   };
 
