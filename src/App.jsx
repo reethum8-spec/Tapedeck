@@ -23,24 +23,48 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/a
 
 const ImportHandler = () => {
   const { addTape } = useTape();
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [pendingTape, setPendingTape] = useState(null);
   const [importMode, setImportMode] = useState(''); // 'gift' or 'collab'
   const [sender, setSender] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   // Unwrapping animation states
   const [isUnwrapping, setIsUnwrapping] = useState(false);
   const [unwrapped, setUnwrapped] = useState(false);
 
+  // 1. Capture pending import from URL immediately and save to sessionStorage to avoid losing it during auth redirect
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const importData = params.get('import');
     const shareId = params.get('share');
+    
+    if (importData || shareId) {
+      sessionStorage.setItem('pending_import_query', location.search);
+      // Clean URL immediately so redirects don't wipe it
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  // 2. Process the captured import once the user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const pendingQuery = sessionStorage.getItem('pending_import_query');
+    if (!pendingQuery) return;
+
+    // Clear it so we don't double-process
+    sessionStorage.removeItem('pending_import_query');
+
+    const params = new URLSearchParams(pendingQuery);
+    const importData = params.get('import');
+    const shareId = params.get('share');
     const shareMode = params.get('mode') || 'collab';
     const shareSender = params.get('sender') || 'A Friend';
-    
+
     if (importData) {
       try {
         const jsonString = LZString.decompressFromEncodedURIComponent(importData);
@@ -58,8 +82,8 @@ const ImportHandler = () => {
         console.error("Failed to parse imported tape:", err);
         alert("This tape link is invalid or corrupted.");
       }
-      navigate(location.pathname, { replace: true });
     } else if (shareId) {
+      setIsLoading(true);
       const fetchSharedTape = async () => {
         try {
           const response = await fetch(`${API_URL}/playlists/share/${shareId}`);
@@ -88,12 +112,13 @@ const ImportHandler = () => {
         } catch (err) {
           console.error("Failed to fetch shared tape:", err);
           alert("Could not load the shared tape. Please check your connection.");
+        } finally {
+          setIsLoading(false);
         }
-        navigate(location.pathname, { replace: true });
       };
       fetchSharedTape();
     }
-  }, [location.search, location.pathname, navigate]);
+  }, [isAuthenticated, addTape]);
 
   const handleClaim = async () => {
     if (!pendingTape) return;
@@ -129,6 +154,22 @@ const ImportHandler = () => {
 
   return (
     <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+        >
+          <div className="text-4xl mb-4 animate-spin text-brand-accent">📼</div>
+          <div className="font-pixel text-xs text-brand-accent glow-text tracking-widest uppercase animate-pulse">
+            RETRIEVING MIXTAPE...
+          </div>
+          <div className="font-mono text-[9px] text-gray-500 mt-2 text-center max-w-xs">
+            Render server is warming up, this might take a moment.
+          </div>
+        </motion.div>
+      )}
       {pendingTape && (
         <motion.div
           initial={{ opacity: 0 }}
