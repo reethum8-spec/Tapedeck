@@ -100,7 +100,7 @@ function App() {
   return (
     <AuthProvider>
       <TapeProvider>
-        {/* HashRouter works better for GitHub Pages (no server-side routing required) */}
+
         <Router>
           <ImportHandler />
           <Layout>
