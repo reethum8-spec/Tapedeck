@@ -1,6 +1,7 @@
 {
   "name": "tapedeck",
   "private": true,
+  "homepage": "https://reethum8-spec.github.io/Tapedeck/",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
