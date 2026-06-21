@@ -1,75 +1,93 @@
-import localforage from 'localforage';
-import { v4 as uuidv4 } from 'uuid';
+const API_URL = 'http://localhost:5000/api';
+
+const getAuthHeaders = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  return {
+    'Content-Type': 'application/json',
+    Authorization: user?.token ? `Bearer ${user.token}` : '',
+  };
+};
 
 export const tapeService = {
   async initDB() {
-    localforage.config({
-      name: 'TapeDeck',
-      storeName: 'tapes_db'
-    });
+    // No longer needed for backend
   },
 
   async getTapes() {
     try {
-      let saved = await localforage.getItem('tapedeck_tapes');
-      let loadedTapes = [];
-
-      if (saved && saved.length > 0) {
-        loadedTapes = saved;
-      } else {
-        // Fallback to localStorage migration
-        const oldTapes = localStorage.getItem('tapedeck_tapes');
-        if (oldTapes) {
-          try {
-            loadedTapes = JSON.parse(oldTapes);
-            await localforage.setItem('tapedeck_tapes', loadedTapes);
-          } catch (e) {
-            console.error('Failed to parse old tapes', e);
-          }
-        }
-      }
-
-      // Inject mocks for Phase 1 demo if missing
-      const hasGift = loadedTapes.some(t => t.isGift);
-      const hasCapsule = loadedTapes.some(t => t.lockedUntil);
-
-      if (!hasGift) {
-        loadedTapes.push({
-          id: uuidv4(),
-          name: "Birthday Mix",
-          color: "bg-pink-400",
-          createdAt: new Date().toISOString(),
-          sideA: [], sideB: [],
-          isGift: true,
-          giftSender: "@retro_kid",
-          giftMessage: "Happy Birthday! Made this just for you. 🎂",
-          isUnwrapped: false
-        });
-      }
-
-      if (!hasCapsule) {
-        loadedTapes.push({
-          id: uuidv4(),
-          name: "Future Memories",
-          color: "bg-blue-500",
-          createdAt: new Date().toISOString(),
-          sideA: [], sideB: [],
-          lockedUntil: new Date(Date.now() + 2 * 60 * 1000).toISOString()
-        });
-      }
-
-      return loadedTapes;
+      const res = await fetch(`${API_URL}/playlists`, {
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+      return json.data;
     } catch (err) {
-      console.error("Error loading tapes from DB:", err);
+      console.error("Error loading tapes from backend:", err);
       return [];
     }
   },
 
-  async saveTapes(tapes) {
-    try {
-      await localforage.setItem('tapedeck_tapes', tapes);
-    } catch (err) {
-      console.error("Error saving tapes to DB:", err);
-    }
+  async createTape(tapeData) {
+    const res = await fetch(`${API_URL}/playlists`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(tapeData)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
+  },
+
+  async updateTape(id, updates) {
+    const res = await fetch(`${API_URL}/playlists/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
+  },
+
+  async deleteTape(id) {
+    const res = await fetch(`${API_URL}/playlists/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
+  },
+
+  async addSong(songData) {
+    const res = await fetch(`${API_URL}/songs`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(songData)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
+  },
+
+  async deleteSong(id) {
+    const res = await fetch(`${API_URL}/songs/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
+  },
+
+  async updateSong(id, updates) {
+    const res = await fetch(`${API_URL}/songs/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+    return json.data;
   }
 };

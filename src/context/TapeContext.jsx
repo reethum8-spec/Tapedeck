@@ -78,32 +78,103 @@ export const TapeProvider = ({ children }) => {
     return () => cancelAnimationFrame(animationFrame);
   }, [isPlaying]);
 
-  const addTape = (tape) => {
-    const newTape = { ...tape, id: uuidv4(), createdAt: new Date().toISOString() };
-    setTapes(prev => [...prev, newTape]);
-    return newTape;
+  const addTape = async (tape) => {
+    try {
+      const savedTape = await tapeService.createTape(tape);
+      setTapes(prev => [...prev, savedTape]);
+      return savedTape;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   };
 
-  const updateTape = (id, updates) => {
+  const updateTape = async (id, updates) => {
     setTapes(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    try {
+      await tapeService.updateTape(id, updates);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const deleteTape = (id) => {
+  const deleteTape = async (id) => {
     setTapes(prev => prev.filter(t => t.id !== id));
     if (currentTape?.id === id) {
       stopPlayback();
     }
+    try {
+      await tapeService.deleteTape(id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const updateTrackMemory = (tapeId, side, trackIndex, memory) => {
+  const addSongToTape = async (tapeId, side, track) => {
+    try {
+      const songData = {
+        playlistId: tapeId,
+        side,
+        jamendoId: track.jamendoId,
+        title: track.title,
+        artist: track.artist,
+        duration: track.duration || 0,
+        audioUrl: track.audioUrl || '',
+        coverUrl: track.albumArt || '',
+      };
+      const savedSong = await tapeService.addSong(songData);
+      
+      setTapes(prev => prev.map(t => {
+        if (t.id === tapeId) {
+          return { ...t, [side === 'A' ? 'sideA' : 'sideB']: [...t[side === 'A' ? 'sideA' : 'sideB'], savedSong] };
+        }
+        return t;
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const removeSongFromTape = async (tapeId, side, trackIndex) => {
+    let songId = null;
+    setTapes(prev => prev.map(t => {
+      if (t.id === tapeId) {
+        const targetSide = side === 'A' ? 'sideA' : 'sideB';
+        const updatedSide = [...t[targetSide]];
+        songId = updatedSide[trackIndex]._id || updatedSide[trackIndex].id;
+        updatedSide.splice(trackIndex, 1);
+        return { ...t, [targetSide]: updatedSide };
+      }
+      return t;
+    }));
+    
+    if (songId) {
+      try {
+        await tapeService.deleteSong(songId);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const updateTrackMemory = async (tapeId, side, trackIndex, memory) => {
+    let songId = null;
     setTapes(prev => prev.map(t => {
       if (t.id === tapeId) {
         const updatedSide = [...t[side]];
+        songId = updatedSide[trackIndex]._id || updatedSide[trackIndex].id;
         updatedSide[trackIndex] = { ...updatedSide[trackIndex], memory };
         return { ...t, [side]: updatedSide };
       }
       return t;
     }));
+    if (songId) {
+      try {
+        await tapeService.updateSong(songId, { memory });
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   const stopPlayback = () => {
@@ -346,6 +417,8 @@ export const TapeProvider = ({ children }) => {
       updateTape,
       deleteTape,
       updateTrackMemory,
+      addSongToTape,
+      removeSongFromTape,
       playTrack,
       togglePlayPause,
       toggleLoop,

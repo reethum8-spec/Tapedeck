@@ -24,7 +24,7 @@ const MOODS = [
 ];
 
 export const Discover = () => {
-  const { tapes, updateTape, addTape, searchTracks: itunesSearch, audiusSearch, searchByTags, stopPlayback } = useTape();
+  const { tapes, addSongToTape, searchTracks: itunesSearch, audiusSearch, searchByTags, stopPlayback, addTape } = useTape();
   const navigate = useNavigate();
 
   const [provider, setProvider] = useState('audius'); // 'audius', 'itunes', 'local'
@@ -186,10 +186,10 @@ export const Discover = () => {
     if (!tape) return;
 
     if (tape.sideA.length < 5) {
-      updateTape(tape.id, { sideA: [...tape.sideA, track] });
+      addSongToTape(tape.id, 'A', track);
       showNotification(`Added to ${tape.name} (Side A)`);
     } else if (tape.sideB.length < 5) {
-      updateTape(tape.id, { sideB: [...tape.sideB, track] });
+      addSongToTape(tape.id, 'B', track);
       showNotification(`Added to ${tape.name} (Side B)`);
     } else {
       showNotification(`Tape "${tape.name}" is full (10 tracks max)!`);

@@ -17,7 +17,7 @@ export const Player = () => {
     tapes, currentTape, currentTrackIndex, currentSide,
     isPlaying, progress, duration, isLooping,
     playTrack, togglePlayPause, toggleLoop, playNextTrack, playPrevTrack,
-    seekTo, deleteTape, updateTape, updateTrackMemory, formatTime,
+    seekTo, deleteTape, updateTape, updateTrackMemory, formatTime, removeSongFromTape,
   } = useTape();
 
   const [activeSide, setActiveSide] = useState('A');
@@ -29,9 +29,7 @@ export const Player = () => {
   const handleDeleteTrack = (e, trackIndex) => {
     e.stopPropagation();
     if (window.confirm('Delete this track from the tape?')) {
-      const sideKey = activeSide === 'A' ? 'sideA' : 'sideB';
-      const newTracks = tape[sideKey].filter((_, idx) => idx !== trackIndex);
-      updateTape(tape.id, { [sideKey]: newTracks });
+      removeSongFromTape(tape.id, activeSide, trackIndex);
     }
   };
 

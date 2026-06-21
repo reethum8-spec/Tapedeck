@@ -1,45 +1,55 @@
-export const authService = {
-  async getUser() {
-    try {
-      const storedUser = localStorage.getItem('tapedeck_user');
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (e) {
-      console.error('Failed to get user from storage', e);
-      return null;
-    }
-  },
+const API_URL = 'http://localhost:5000/api/auth';
 
-  async saveUser(user) {
-    try {
-      localStorage.setItem('tapedeck_user', JSON.stringify(user));
-    } catch (e) {
-      console.error('Failed to save user to storage', e);
-    }
-  },
+export const login = async (email, password) => {
+  const response = await fetch(`${API_URL}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  
+  const json = await response.json();
+  if (!json.success) throw new Error(json.error);
+  
+  localStorage.setItem('user', JSON.stringify(json.data));
+  return json.data;
+};
 
-  async clearUser() {
-    try {
-      localStorage.removeItem('tapedeck_user');
-      localStorage.removeItem('tapedeck_onboarded');
-    } catch (e) {
-      console.error('Failed to clear user from storage', e);
-    }
-  },
+export const register = async (name, email, password) => {
+  const response = await fetch(`${API_URL}/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
+  
+  const json = await response.json();
+  if (!json.success) throw new Error(json.error);
+  
+  localStorage.setItem('user', JSON.stringify(json.data));
+  return json.data;
+};
 
-  async getOnboardedStatus() {
-    try {
-      return localStorage.getItem('tapedeck_onboarded') === 'true';
-    } catch (e) {
-      console.error('Failed to get onboarded status', e);
-      return false;
-    }
-  },
+export const logout = async () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('hasOnboarded');
+};
 
-  async setOnboardedStatus(status) {
-    try {
-      localStorage.setItem('tapedeck_onboarded', status ? 'true' : 'false');
-    } catch (e) {
-      console.error('Failed to set onboarded status', e);
-    }
+export const getCurrentUser = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
   }
+};
+
+export const updateUserProfile = async (userData) => {
+    // For now we just update local storage. In a real app, this would hit a PUT /api/auth/profile
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+        const updated = { ...currentUser, ...userData };
+        localStorage.setItem('user', JSON.stringify(updated));
+        return updated;
+    }
+    return userData;
 };
