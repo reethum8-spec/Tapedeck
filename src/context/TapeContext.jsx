@@ -49,12 +49,6 @@ export const TapeProvider = ({ children }) => {
     loadTapes();
   }, []);
 
-  // 2. Save tapes whenever they change (only after initial load)
-  useEffect(() => {
-    if (dbLoaded) {
-      tapeService.saveTapes(tapes);
-    }
-  }, [tapes, dbLoaded]);
 
   // Audio Progress Loop
   useEffect(() => {
