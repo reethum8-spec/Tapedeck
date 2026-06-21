@@ -97,3 +97,32 @@ exports.deletePlaylist = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get a shared playlist by ID (Public)
+// @route   GET /api/playlists/share/:id
+// @access  Public
+exports.getSharedPlaylist = async (req, res, next) => {
+  try {
+    const playlist = await Playlist.findById(req.params.id);
+
+    if (!playlist) {
+      return res.status(404).json({ success: false, error: 'Playlist not found' });
+    }
+
+    const songs = await Song.find({ playlistId: playlist._id });
+    const sideA = songs.filter(s => s.side === 'A');
+    const sideB = songs.filter(s => s.side === 'B');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...playlist.toObject(),
+        id: playlist._id,
+        sideA,
+        sideB
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
