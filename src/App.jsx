@@ -100,12 +100,7 @@ function App() {
   return (
     <AuthProvider>
       <TapeProvider>
-<<<<<<< HEAD
         <Router basename={import.meta.env.BASE_URL}>
-=======
-        {/* Set basename so BrowserRouter works when the app is served from a subpath (GitHub Pages repo URL) */}
-        <Router basename="/Tapedeck">
->>>>>>> 55622f5194873602005aed045d339213f16c99e3
           <ImportHandler />
           <Layout>
             <AnimatedRoutes />
