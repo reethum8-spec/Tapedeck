@@ -53,3 +53,21 @@ export const updateUserProfile = async (userData) => {
     }
     return userData;
 };
+
+export const getOnboardedStatus = async () => {
+  return localStorage.getItem('hasOnboarded') === 'true';
+};
+
+export const setOnboardedStatus = async (status) => {
+  localStorage.setItem('hasOnboarded', status.toString());
+};
+
+export const authService = {
+  login,
+  register,
+  logout,
+  getUser: async () => getCurrentUser(),
+  getOnboardedStatus,
+  setOnboardedStatus,
+  updateUserProfile
+};
