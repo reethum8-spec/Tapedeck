@@ -98,7 +98,7 @@ function App() {
   return (
     <AuthProvider>
       <TapeProvider>
-        <Router>
+        <Router basename={import.meta.env.BASE_URL}>
           <ImportHandler />
           <Layout>
             <AnimatedRoutes />
