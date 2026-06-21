@@ -2,6 +2,8 @@
 
 **TapeDeck** is a social music scrapbook and retro cassette player built for the modern web. It brings back the nostalgia of mixtapes by letting you curate, customize, and share music in a deeply personal way.
 
+Live demo: https://reethum8-spec.github.io/Tapedeck/
+
 ![TapeDeck Preview](https://github.com/reethum8-spec/Tapedeck/blob/main/src/assets/hero.png?raw=true)
 
 ## ✨ Features

@@ -89,6 +89,8 @@ const AnimatedRoutes = () => {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/pet-center" element={<ProtectedRoute><PetCenter /></ProtectedRoute>} />
         <Route path="/player/:id" element={<ProtectedRoute><Player /></ProtectedRoute>} />
+        {/* Fallback route for unknown paths under the repo base */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );
@@ -98,7 +100,12 @@ function App() {
   return (
     <AuthProvider>
       <TapeProvider>
+<<<<<<< HEAD
         <Router basename={import.meta.env.BASE_URL}>
+=======
+        {/* Set basename so BrowserRouter works when the app is served from a subpath (GitHub Pages repo URL) */}
+        <Router basename="/Tapedeck">
+>>>>>>> 55622f5194873602005aed045d339213f16c99e3
           <ImportHandler />
           <Layout>
             <AnimatedRoutes />
@@ -110,4 +117,3 @@ function App() {
 }
 
 export default App;
-
