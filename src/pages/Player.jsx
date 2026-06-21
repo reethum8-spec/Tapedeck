@@ -75,6 +75,10 @@ export const Player = () => {
   const tracks = activeSide === 'A' ? (tape.sideA || []) : (tape.sideB || []);
   const isThisTape = currentTape?.id === id && currentSide === activeSide;
 
+  const currentSideKey = currentSide === 'A' ? 'sideA' : 'sideB';
+  const currentTracks = currentTape ? (currentTape[currentSideKey] || []) : [];
+  const currentTrack = currentTracks[currentTrackIndex];
+
   const handleTrackClick = (index) => playTrack(tape, index, activeSide);
 
   const handleSeek = (dir) => {
@@ -335,7 +339,7 @@ export const Player = () => {
             </div>
             
             <AnimatePresence mode="wait">
-              {isThisTape && currentTape[currentSide][currentTrackIndex]?.memory ? (
+              {isThisTape && currentTrack?.memory ? (
                 <motion.div
                   key={`${currentSide}-${currentTrackIndex}`}
                   initial={{ opacity: 0, scale: 0.8, rotate: Math.random() * 20 - 10 }}
@@ -344,7 +348,7 @@ export const Player = () => {
                   transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                   className="mt-10"
                 >
-                  <MemoryCard memory={currentTape[currentSide][currentTrackIndex].memory} />
+                  <MemoryCard memory={currentTrack.memory} />
                 </motion.div>
               ) : (
                 <motion.div
