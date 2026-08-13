@@ -1,4 +1,4 @@
-# 📼 TapeDeck
+# TapeDeck
 
 **TapeDeck** is a social music scrapbook and retro cassette player built for the modern web. It brings back the nostalgia of mixtapes by letting you curate, customize, and share music in a deeply personal way.
 
@@ -6,7 +6,7 @@ Live demo: https://reethum8-spec.github.io/Tapedeck/
 
 ![TapeDeck Preview](https://github.com/reethum8-spec/Tapedeck/blob/main/src/assets/hero.png?raw=true)
 
-## ✨ Features
+## Features
 
 - **Retro Aesthetic**: A stunning 90s-inspired UI with pixel fonts, CRT scanlines, and cassette tape animations.
 - **Custom Mixtapes**: Create and design your own cassette tapes. Choose your tape color, write a custom label, and curate tracks across Side A and Side B.
@@ -16,14 +16,14 @@ Live demo: https://reethum8-spec.github.io/Tapedeck/
 - **Time Capsules**: Lock your tapes so they can only be opened after a specific date.
 - **Pet Center**: Unlock and collect virtual desktop companions that vibe with you while you listen.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Frontend**: React + Vite
 - **Styling**: TailwindCSS with custom retro CSS animations and Framer Motion for smooth transitions.
 - **Icons**: Lucide React
 - **Data Management**: LocalStorage (currently) with LZ-String for URL-based offline sharing.
 
-## 🛠️ Getting Started
+## Getting Started
 
 1. **Clone the repository**
    ```bash
@@ -47,5 +47,5 @@ Live demo: https://reethum8-spec.github.io/Tapedeck/
 
 5. Open your browser to `http://localhost:5173` to start making mixtapes!
 
-## 🤝 Contributing
+## Contributing
 Contributions are welcome! Feel free to open issues or submit pull requests. Let's keep the mixtape culture alive!
