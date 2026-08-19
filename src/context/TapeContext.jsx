@@ -412,7 +412,14 @@ export const TapeProvider = ({ children }) => {
   };
 
   // Only render children when DB has successfully loaded old tapes
-  if (!dbLoaded) return null;
+  if (!dbLoaded) {
+    return (
+      <div className="h-screen bg-[#121212] flex flex-col items-center justify-center font-pixel text-[#7CDCB1] gap-4">
+        <div className="text-4xl animate-bounce">📼</div>
+        <div className="text-xs tracking-widest">LOADING TAPEDECK...</div>
+      </div>
+    );
+  }
 
   return (
     <TapeContext.Provider value={{

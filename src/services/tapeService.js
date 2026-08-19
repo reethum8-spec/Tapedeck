@@ -29,38 +29,57 @@ export const tapeService = {
       localTapes = (await localforage.getItem('tapedeck_tapes')) || [];
     } catch (err) {}
 
+    // If no authenticated server user token, return local tapes immediately
+    const userStr = typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null;
+    let user = null;
     try {
-      const res = await fetch(`${API_URL}/playlists`, { headers: getAuthHeaders() });
+      if (userStr) user = JSON.parse(userStr);
+    } catch (e) {}
+
+    if (!user || !user.token || user.token === 'local-offline-token' || (user.id && String(user.id).startsWith('local-'))) {
+      return localTapes;
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(`${API_URL}/playlists`, { 
+        headers: getAuthHeaders(),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
       if (!res.ok) throw new Error("API not ok");
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) throw new Error("Not JSON");
       
       const json = await res.json();
-        if (json.success) {
-          const serverTapes = json.data;
-          
-          // Re-read local tapes after the fetch in case the user created/edited tapes while Render was asleep
-          const freshLocalTapes = (await localforage.getItem('tapedeck_tapes')) || [];
-          
-          // Background sync: Find any locals that haven't been pushed to server yet.
-          const unsyncedLocals = freshLocalTapes.filter(lt => lt.isLocalOnly);
-          // Push them to backend asynchronously without blocking the initial load
-          unsyncedLocals.forEach(async (tape) => {
-            try {
-              await this.createTape(tape, true); // true = skip local push
-            } catch(e) {}
-          });
+      if (json.success) {
+        const serverTapes = json.data;
+        
+        // Re-read local tapes after the fetch in case the user created/edited tapes while Render was asleep
+        const freshLocalTapes = (await localforage.getItem('tapedeck_tapes')) || [];
+        
+        // Background sync: Find any locals that haven't been pushed to server yet.
+        const unsyncedLocals = freshLocalTapes.filter(lt => lt.isLocalOnly);
+        // Push them to backend asynchronously without blocking the initial load
+        unsyncedLocals.forEach(async (tape) => {
+          try {
+            await this.createTape(tape, true); // true = skip local push
+          } catch(e) {}
+        });
 
-          // Clean up server tapes to ensure they have an `id` property
-          const cleanServerTapes = serverTapes.map(t => ({...t, id: t.id || t._id}));
+        // Clean up server tapes to ensure they have an `id` property
+        const cleanServerTapes = serverTapes.map(t => ({...t, id: t.id || t._id}));
 
-          // The authoritative list is serverTapes + any remaining unsynced locals
-          const merged = [...cleanServerTapes, ...unsyncedLocals];
-          await localforage.setItem('tapedeck_tapes', merged);
-          return merged;
-        }
+        // The authoritative list is serverTapes + any remaining unsynced locals
+        const merged = [...cleanServerTapes, ...unsyncedLocals];
+        await localforage.setItem('tapedeck_tapes', merged);
+        return merged;
+      }
     } catch (err) {
-      console.warn("Backend fetch failed, using local offline cache.", err);
+      console.warn("Backend fetch failed or timed out, using local offline cache.", err);
     }
     return localTapes;
   },
