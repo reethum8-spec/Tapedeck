@@ -21,6 +21,69 @@ import LZString from 'lz-string';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api';
 
+const GiftAudio = ({ tape, hostedGift }) => {
+  const [audioTape, setAudioTape] = useState(null);
+  const [selected, setSelected] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const source = hostedGift ? audioTape : tape;
+  const tracks = ['A', 'B'].flatMap(side =>
+    (Array.isArray(source?.[`side${side}`]) ? source[`side${side}`] : [])
+      .filter(track => typeof track?.audioUrl === 'string' && /^(https?:\/\/|data:audio\/)/i.test(track.audioUrl))
+      .map(track => ({ ...track, side }))
+  );
+  const track = tracks[selected];
+
+  const loadAudio = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/gifts/${encodeURIComponent(hostedGift)}/audio`, {
+        signal: AbortSignal.timeout(20000),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !Array.isArray(result.sideA) || !Array.isArray(result.sideB)) {
+        throw new Error(result.error || 'Gift audio is unavailable. Try again.');
+      }
+      setAudioTape(result);
+    } catch (error) {
+      setError(error.name === 'TimeoutError' ? 'Gift audio took too long to load. Try again.' : error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (new Date(tape.lockedUntil) > new Date()) {
+    return <p className="text-sm text-gray-300">This time capsule is still locked.</p>;
+  }
+  return (
+    <div className="w-full space-y-2">
+      {!source ? (
+        <button type="button" onClick={loadAudio} disabled={isLoading}
+          className="w-full rounded bg-brand-accent px-4 py-2 text-sm font-bold text-black focus-visible:outline">
+          {isLoading ? 'Loading audio…' : 'Load tracks to listen'}
+        </button>
+      ) : track ? (
+        <>
+          <label className="block text-left text-sm text-gray-300">
+            Track
+            <select value={selected} onChange={event => { setSelected(Number(event.target.value)); setError(''); }}
+              className="mt-1 block w-full rounded border border-gray-600 bg-black p-2 text-white">
+              {tracks.map((song, index) => (
+                <option key={index} value={index}>Side {song.side} · {song.title}</option>
+              ))}
+            </select>
+          </label>
+          <audio key={selected} aria-label={`Play ${track.title}`} controls preload="none" src={track.audioUrl}
+            className="w-full" onPlay={() => setError('')}
+            onError={() => setError('This track could not play. Try another track or ask the sender for a new link.')} />
+        </>
+      ) : <p className="text-sm text-gray-300">There are no playable tracks in this gift.</p>}
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
+    </div>
+  );
+};
+
 const ImportHandler = () => {
   const { addTape, tapes } = useTape();
   const { isAuthenticated } = useAuth();
@@ -60,13 +123,8 @@ const ImportHandler = () => {
 
   // 2. Process the captured import once the user is authenticated
   useEffect(() => {
-    if (!isAuthenticated) return;
-
     const pendingQuery = sessionStorage.getItem('pending_import_query');
     if (!pendingQuery) return;
-
-    // Clear it so we don't double-process
-    sessionStorage.removeItem('pending_import_query');
 
     const params = new URLSearchParams(pendingQuery);
     const importData = params.get('import');
@@ -75,10 +133,13 @@ const ImportHandler = () => {
     const shareSender = params.get('sender') || 'A Friend';
 
     const giftId = params.get('gift');
+    if (!isAuthenticated && !giftId && !importData && shareMode !== 'gift') return;
+    sessionStorage.removeItem('pending_import_query');
+
     setHostedGift(null);
     if (giftId) {
       setIsLoading(true);
-      fetch(`${API_URL}/gifts/${encodeURIComponent(giftId)}`)
+      fetch(`${API_URL}/gifts/${encodeURIComponent(giftId)}`, { signal: AbortSignal.timeout(20000) })
         .then(async response => {
           const tape = await response.json();
           if (!response.ok) throw new Error(tape.error || 'Unable to open this gift.');
@@ -99,6 +160,10 @@ const ImportHandler = () => {
         const jsonString = LZString.decompressFromEncodedURIComponent(importData);
         if (!jsonString) throw new Error('Empty tape link');
         const tapeData = JSON.parse(jsonString);
+        if (!isAuthenticated && !tapeData?.isGift) {
+          sessionStorage.setItem('pending_import_query', pendingQuery);
+          return;
+        }
         if (typeof tapeData?.name !== 'string' || !tapeData.name.trim()) {
           throw new Error('Invalid tape');
         }
@@ -337,10 +402,10 @@ const ImportHandler = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-              className="w-full max-w-sm flex flex-col items-center bg-[#111] retro-border p-8 text-center relative"
+              className="w-full max-w-sm max-h-[92dvh] overflow-y-auto flex flex-col items-center bg-[#111] retro-border p-6 text-center relative"
             >
               {/* Confetti or sparkles behind */}
-              <div className="absolute -top-10 text-brand-accent animate-bounce">
+              <div className="text-brand-accent mb-2">
                 <Sparkles size={32} />
               </div>
 
@@ -359,21 +424,23 @@ const ImportHandler = () => {
                 }} />
               </div>
 
-              {/* Action Buttons */}
-              <div className="w-full space-y-3">
-                <button
+              {importMode === 'gift' && (
+                <GiftAudio key={hostedGift || pendingTape.id} tape={pendingTape} hostedGift={hostedGift} />
+              )}
+              <div className="w-full space-y-3 mt-4">
+                {isAuthenticated && <button
                   onClick={handleClaim}
                   disabled={isSaving}
                   className="w-full py-3 bg-brand-accent text-black font-bold font-pixel text-xs tracking-wider hover:shadow-[0_0_15px_rgba(93,202,165,0.4)] transition-all flex items-center justify-center gap-2"
                 >
                   <Check size={14} /> {isSaving ? 'SAVING AUDIO…' : 'ADD TO SHELF'}
-                </button>
+                </button>}
                 <button
                   onClick={handleDecline}
                   disabled={isSaving}
                   className="w-full py-3 border border-[#333] hover:border-red-500 text-gray-500 hover:text-red-500 font-mono text-xs transition-colors"
                 >
-                  DECLINE
+                  CLOSE
                 </button>
               </div>
             </motion.div>

@@ -56,6 +56,19 @@ router.get('/:id', async (req, res) => {
   return res.json(gift.tape);
 });
 
+router.get('/:id/audio', async (req, res) => {
+  const gift = await Gift.findOne(activeGift(req.params.id), {
+    'tape.sideA': 1, 'tape.sideB': 1, 'tape.lockedUntil': 1,
+  });
+  if (!gift) return res.status(410).json({ error: 'This gift has expired or already been saved.' });
+  if (new Date(gift.tape.lockedUntil) > new Date()) {
+    return res.status(403).json({ error: 'This time capsule is still locked.' });
+  }
+
+  const playable = side => side.map(({ title, artist, audioUrl }) => ({ title, artist, audioUrl }));
+  return res.json({ sideA: playable(gift.tape.sideA), sideB: playable(gift.tape.sideB) });
+});
+
 router.post('/:id/claim', express.json({ limit: '1kb' }), async (req, res) => {
   const { claimant } = req.body || {};
   if (!UUID.test(claimant)) return res.sendStatus(400);
