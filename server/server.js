@@ -10,8 +10,9 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(express.json({ limit: '50mb' })); // Support large base64 images
 app.use(cors());
+app.use('/api/gifts', require('./routes/giftRoutes'));
+app.use(express.json({ limit: '50mb' })); // Support large base64 images
 
 const path = require('path');
 
@@ -23,7 +24,7 @@ app.use('/api/search', require('./routes/searchRoutes'));
 // Serve frontend
 app.use(express.static(path.join(__dirname, '../dist')));
 
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 

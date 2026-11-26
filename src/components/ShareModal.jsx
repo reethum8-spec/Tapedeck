@@ -4,6 +4,9 @@ import { X, Gift, Users, Copy, Check } from 'lucide-react';
 import LZString from 'lz-string';
 import { useAuth } from '../context/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api';
+const MAX_GIFT_BYTES = 8 * 1024 * 1024;
+
 export const ShareModal = ({ isOpen, onClose, tape }) => {
   const { user } = useAuth();
   const [mode, setMode] = useState('gift'); // 'gift' or 'collab'
@@ -12,14 +15,19 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
 
+  const [generating, setGenerating] = useState(false);
+
   if (!isOpen || !tape) return null;
 
   const hasFiles = [...(tape.sideA || []), ...(tape.sideB || [])].some(track => track.blob || track.audioUrl?.startsWith('data:'));
   const handleGenerate = async () => {
+    setGenerating(true);
     try {
       await generateGift();
-    } catch {
-      window.alert('Could not prepare this tape. Please try again.');
+    } catch (error) {
+      window.alert(error.message || 'Could not prepare this tape. Please try again.');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -60,6 +68,21 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
     }
 
     const jsonString = JSON.stringify(exportTape);
+    if (hasFiles && mode === 'gift') {
+      if (new Blob([jsonString]).size > MAX_GIFT_BYTES) {
+        throw new Error('This gift exceeds the 8 MB upload limit. Try a shorter tape or smaller audio files.');
+      }
+      const response = await fetch(`${API_URL}/gifts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: jsonString,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.id) throw new Error(result.error || 'Gift hosting is unavailable. Please try again later.');
+      setGeneratedLink(`${window.location.origin}${window.location.pathname}#/?gift=${encodeURIComponent(result.id)}`);
+      setCopied(false);
+      return;
+    }
     if (hasFiles) {
       const url = URL.createObjectURL(new Blob([jsonString], { type: 'application/json' }));
       const download = document.createElement('a');
@@ -155,17 +178,18 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
 
               {hasFiles && (
                 <p className="font-mono text-xs text-gray-400 mb-4">
-                  Send the downloaded tape file to your recipient. On their TapeDeck shelf, choose Open tape file to load the songs.
+                  {mode === 'gift' ? 'Audio uploads when you create the link. One recipient can save it within 24 hours.' : 'Send the downloaded file. Your recipient can use Open tape file on their shelf.'}
                 </p>
               )}
 
               <button
                 onClick={handleGenerate}
+                disabled={generating}
                 className={`w-full py-3 text-black font-bold font-mono tracking-widest hover:brightness-110 transition-all ${
                   mode === 'gift' ? 'bg-[#f1c40f]' : 'bg-brand-accent'
                 }`}
               >
-                {hasFiles ? 'DOWNLOAD TAPE FILE' : 'CREATE LINK'}
+                {generating ? 'PREPARING…' : hasFiles && mode !== 'gift' ? 'DOWNLOAD TAPE FILE' : 'CREATE LINK'}
               </button>
             </>
           ) : (

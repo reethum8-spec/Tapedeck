@@ -22,11 +22,13 @@ import LZString from 'lz-string';
 const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api';
 
 const ImportHandler = () => {
-  const { addTape } = useTape();
+  const { addTape, tapes } = useTape();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [hostedGift, setHostedGift] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [pendingTape, setPendingTape] = useState(null);
   const [importMode, setImportMode] = useState(''); // 'gift' or 'collab'
   const [sender, setSender] = useState('');
@@ -40,15 +42,15 @@ const ImportHandler = () => {
   useEffect(() => {
     const pageParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(location.search);
-    const params = hashParams.has('import') || hashParams.has('share') ? hashParams : pageParams;
+    const params = hashParams.has('import') || hashParams.has('share') || hashParams.has('gift') ? hashParams : pageParams;
     const importData = params.get('import');
     const shareId = params.get('share');
     
-    if (importData || shareId) {
+    if (importData || shareId || params.has('gift')) {
       sessionStorage.setItem('pending_import_query', params.toString());
-      if (pageParams.has('import') || pageParams.has('share')) {
+      if (pageParams.has('import') || pageParams.has('share') || pageParams.has('gift')) {
         const url = new URL(window.location.href);
-        for (const key of ['import', 'share', 'mode', 'sender']) url.searchParams.delete(key);
+        for (const key of ['import', 'share', 'gift', 'mode', 'sender']) url.searchParams.delete(key);
         window.history.replaceState(window.history.state, '', url);
       }
       // Clean URL immediately so redirects don't wipe it
@@ -71,6 +73,26 @@ const ImportHandler = () => {
     const shareId = params.get('share');
     const shareMode = params.get('mode') || 'collab';
     const shareSender = params.get('sender') || 'A Friend';
+
+    const giftId = params.get('gift');
+    setHostedGift(null);
+    if (giftId) {
+      setIsLoading(true);
+      fetch(`${API_URL}/gifts/${encodeURIComponent(giftId)}`)
+        .then(async response => {
+          const tape = await response.json();
+          if (!response.ok) throw new Error(tape.error || 'Unable to open this gift.');
+          setHostedGift(giftId);
+          setPendingTape(tape);
+          setImportMode('gift');
+          setSender(tape.giftSender || 'A Friend');
+          setUnwrapped(false);
+          setIsUnwrapping(false);
+        })
+        .catch(error => window.alert(error.message))
+        .finally(() => setIsLoading(false));
+      return;
+    }
 
     if (importData) {
       try {
@@ -134,6 +156,7 @@ const ImportHandler = () => {
       const tape = { ...event.detail, id: crypto.randomUUID() };
       delete tape._id;
       delete tape.userId;
+      setHostedGift(null);
       setPendingTape(tape);
       setSender(tape.giftSender || 'A Friend');
       setImportMode(tape.isGift ? 'gift' : 'collab');
@@ -145,7 +168,42 @@ const ImportHandler = () => {
   }, []);
 
   const handleClaim = async () => {
-    if (!pendingTape) return;
+    if (!pendingTape || isSaving) return;
+    if (hostedGift) {
+      setIsSaving(true);
+      const key = `gift-claim:${hostedGift}`;
+      try {
+        const claimant = sessionStorage.getItem(key) || crypto.randomUUID();
+        sessionStorage.setItem(key, claimant);
+        const url = `${API_URL}/gifts/${encodeURIComponent(hostedGift)}/claim`;
+        const request = { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claimant }) };
+        if (!tapes.some(tape => tape.id === hostedGift)) {
+          const response = await fetch(url, { ...request, method: 'POST' });
+          const tape = await response.json();
+          if (!response.ok) throw new Error(tape.error || 'Could not download this gift.');
+          for (const side of ['sideA', 'sideB']) {
+            for (const track of tape[side]) {
+              if (track.audioUrl.startsWith('data:')) {
+                track.blob = await (await fetch(track.audioUrl)).blob();
+                track.audioUrl = '';
+              }
+            }
+          }
+          const saved = await addTape({ ...tape, id: hostedGift, _id: undefined, userId: undefined, isGift: true, isUnwrapped: true });
+          if (!saved) throw new Error('Could not save this gift on this device.');
+        }
+        const completed = await fetch(url, { ...request, method: 'DELETE' });
+        if (!completed.ok) throw new Error('The tape is on this device. Retry to finish closing the gift link.');
+        sessionStorage.removeItem(key);
+        setPendingTape(null);
+        navigate(`/player/${hostedGift}`);
+      } catch (error) {
+        window.alert(error.message || 'Could not save this gift. Please try again.');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
     const finalTape = { ...pendingTape };
     if (importMode === 'gift') {
       finalTape.isGift = true;
@@ -267,6 +325,7 @@ const ImportHandler = () => {
 
               <button
                 onClick={handleDecline}
+                  disabled={isSaving}
                 className="mt-8 text-gray-600 hover:text-white font-mono text-xs underline"
               >
                 Decline Gift
@@ -304,12 +363,14 @@ const ImportHandler = () => {
               <div className="w-full space-y-3">
                 <button
                   onClick={handleClaim}
+                  disabled={isSaving}
                   className="w-full py-3 bg-brand-accent text-black font-bold font-pixel text-xs tracking-wider hover:shadow-[0_0_15px_rgba(93,202,165,0.4)] transition-all flex items-center justify-center gap-2"
                 >
-                  <Check size={14} /> ADD TO SHELF
+                  <Check size={14} /> {isSaving ? 'SAVING AUDIO…' : 'ADD TO SHELF'}
                 </button>
                 <button
                   onClick={handleDecline}
+                  disabled={isSaving}
                   className="w-full py-3 border border-[#333] hover:border-red-500 text-gray-500 hover:text-red-500 font-mono text-xs transition-colors"
                 >
                   DECLINE
