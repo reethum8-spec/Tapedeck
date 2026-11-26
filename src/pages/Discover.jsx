@@ -1,10 +1,11 @@
+import { getAudioFormat } from '../utils/audioFormat';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTape } from '../context/TapeContext';
 import { AnimatedPage } from '../components/AnimatedPage';
 import { Search, Loader2, Plus, Music, Check, Play, Square, Upload, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Howl } from 'howler';
+import { Howl, Howler } from 'howler';
 
 const COLORS = [
   { name: 'Forest', bg: '#1a472a', label: '#5DCAA5' },
@@ -85,16 +86,25 @@ export const Discover = () => {
       previewSound.current.unload();
     }
 
+    if (!track.audioUrl) {
+      showNotification('Preview unavailable for this track');
+      setPreviewingId(null);
+      return;
+    }
+
     setPreviewingId(track.jamendoId);
+    const showPreviewError = () => {
+      showNotification('Preview unavailable for this track');
+      setPreviewingId(null);
+    };
+    const format = getAudioFormat(track);
     previewSound.current = new Howl({
       src: [track.audioUrl],
       html5: true,
-      format: ['mp3', 'm4a', 'aac', 'wav'],
+      format: [Howler.codecs(format) ? format : 'mp3'],
       onend: () => setPreviewingId(null),
-      onloaderror: () => {
-        showNotification("Preview unavailable for this track");
-        setPreviewingId(null);
-      }
+      onloaderror: showPreviewError,
+      onplayerror: showPreviewError,
     });
     previewSound.current.play();
   };

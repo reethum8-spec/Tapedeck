@@ -15,7 +15,7 @@ export const Player = () => {
   const navigate = useNavigate();
   const {
     tapes, currentTape, currentTrackIndex, currentSide,
-    isPlaying, progress, duration, isLooping,
+    isPlaying, progress, duration, isLooping, playbackError, volume, changeVolume,
     playTrack, togglePlayPause, toggleLoop, playNextTrack, playPrevTrack,
     seekTo, deleteTape, updateTape, updateTrackMemory, formatTime, removeSongFromTape,
   } = useTape();
@@ -201,6 +201,15 @@ export const Player = () => {
             </div>
           </div>
 
+          <label className="flex items-center gap-3 px-4 pb-2 text-sm text-gray-300">
+            Volume
+            <input type="range" min="0" max="1" step="0.05" value={volume}
+              onChange={event => changeVolume(Number(event.target.value))} />
+            <span>{Math.round(volume * 100)}%</span>
+          </label>
+          {isThisTape && playbackError && (
+            <p role="alert" className="px-4 pb-2 text-sm text-red-300">{playbackError}</p>
+          )}
           <div className="chrome-strip mt-2" />
         </div>
 

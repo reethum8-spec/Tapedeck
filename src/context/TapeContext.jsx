@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { Howl } from 'howler';
+import { Howl, Howler } from 'howler';
+import { getAudioFormat } from '../utils/audioFormat';
 import { tapeService } from '../services/tapeService';
 
 const TapeContext = createContext();
@@ -22,6 +23,9 @@ export const TapeProvider = ({ children }) => {
   const [currentTape, setCurrentTape] = useState(null);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackError, setPlaybackError] = useState('');
+  const [volume, setVolume] = useState(1);
+  const volumeRef = useRef(1);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentSide, setCurrentSide] = useState('A');
@@ -199,6 +203,7 @@ export const TapeProvider = ({ children }) => {
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
+    setPlaybackError('');
     setNowPlayingVisible(false);
     setCurrentTape(null);
   };
@@ -213,6 +218,7 @@ export const TapeProvider = ({ children }) => {
     if (soundRef.current) {
       soundRef.current.stop();
       soundRef.current.unload();
+      soundRef.current = null;
     }
 
     // Revoke old blob URL
@@ -224,6 +230,9 @@ export const TapeProvider = ({ children }) => {
     setCurrentTape(safeTape);
     setCurrentTrackIndex(trackIndex);
     setCurrentSide(side);
+    setIsPlaying(false);
+    setPlaybackError('');
+    setDuration(0);
     setProgress(0);
     setNowPlayingVisible(true);
 
@@ -234,13 +243,33 @@ export const TapeProvider = ({ children }) => {
       activeBlobUrlRef.current = finalAudioUrl;
     }
 
+    if (!finalAudioUrl) {
+      setPlaybackError('This track has no audio source. Add a playable version to this tape.');
+      return;
+    }
+
+    const showError = message => {
+      if (soundRef.current !== sound) return;
+      setIsPlaying(false);
+      setPlaybackError(message);
+    };
+
+    const format = getAudioFormat(track);
     const sound = new Howl({
       src: [finalAudioUrl],
       html5: true,
-      format: ['mp3', 'm4a', 'aac', 'wav'],
-      onplay: () => setIsPlaying(true),
-      onpause: () => setIsPlaying(false),
+      format: [Howler.codecs(format) ? format : 'mp3'],
+      volume: volumeRef.current,
+      onplay: () => {
+        if (soundRef.current !== sound) return;
+        setPlaybackError('');
+        setIsPlaying(true);
+      },
+      onpause: () => {
+        if (soundRef.current === sound) setIsPlaying(false);
+      },
       onend: () => {
+        if (soundRef.current !== sound) return;
         if (isLoopingRef.current) {
           // Replay the exact same track
           playTrack(safeTape, trackIndex, side);
@@ -254,13 +283,8 @@ export const TapeProvider = ({ children }) => {
           }
         }
       },
-      onloaderror: (id, err) => {
-        console.error("Error loading track:", err);
-        setIsPlaying(false);
-      },
-      onplayerror: () => {
-        sound.once('unlock', () => sound.play());
-      }
+      onloaderror: () => showError('This audio could not load. The link may have expired or the format may be unsupported.'),
+      onplayerror: () => showError('Playback could not start. Press Play to try again.'),
     });
 
     soundRef.current = sound;
@@ -268,7 +292,7 @@ export const TapeProvider = ({ children }) => {
   }, []);
 
   const togglePlayPause = () => {
-    if (!soundRef.current) {
+    if (!soundRef.current || playbackError) {
       if (currentTape && currentTrackIndex !== null) {
         playTrack(currentTape, currentTrackIndex, currentSide);
       }
@@ -279,6 +303,12 @@ export const TapeProvider = ({ children }) => {
     } else {
       soundRef.current.play();
     }
+  };
+
+  const changeVolume = value => {
+    volumeRef.current = value;
+    setVolume(value);
+    soundRef.current?.volume(value);
   };
 
   const playNextTrack = useCallback(() => {
@@ -337,7 +367,7 @@ export const TapeProvider = ({ children }) => {
       const data = await res.json();
       if (!data.results) return [];
       
-      return data.results.map(t => ({
+      return data.results.filter(t => t.previewUrl).map(t => ({
         jamendoId: String(t.trackId),
         title: t.trackName,
         artist: t.artistName,
@@ -358,7 +388,7 @@ export const TapeProvider = ({ children }) => {
       const data = await res.json();
       if (!data.results) return [];
       
-      return data.results.map(t => ({
+      return data.results.filter(t => t.previewUrl).map(t => ({
         jamendoId: String(t.trackId),
         title: t.trackName,
         artist: t.artistName,
@@ -424,6 +454,9 @@ export const TapeProvider = ({ children }) => {
       duration,
       nowPlayingVisible,
       isLooping,
+      playbackError,
+      volume,
+      changeVolume,
       addTape,
       updateTape,
       deleteTape,
