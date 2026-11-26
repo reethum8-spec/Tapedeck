@@ -10,40 +10,60 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
   const [senderName, setSenderName] = useState(user?.tapeTag || '');
   const [generatedLink, setGeneratedLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   if (!isOpen || !tape) return null;
 
   const handleGenerate = () => {
     const exportTape = { ...tape };
     delete exportTape.id;
+    delete exportTape._id;
+    delete exportTape.userId;
+    for (const side of ['sideA', 'sideB']) {
+      exportTape[side] = (tape[side] || []).filter(track => !track.blob).map(track => {
+        const sharedTrack = { ...track };
+        delete sharedTrack._id;
+        delete sharedTrack.id;
+        delete sharedTrack.playlistId;
+        return sharedTrack;
+      });
+    }
+
 
     if (mode === 'gift') {
       exportTape.isGift = true;
       exportTape.isUnwrapped = false;
       exportTape.giftSender = senderName || 'A Friend';
     } else {
+      exportTape.isGift = false;
+      exportTape.giftSender = senderName || user?.tapeTag || 'A Friend';
       exportTape.isCollaborative = true;
       exportTape.contributors = [user?.tapeTag || 'Unknown'];
     }
 
     const jsonString = JSON.stringify(exportTape);
     const compressed = LZString.compressToEncodedURIComponent(jsonString);
-    const link = `${window.location.origin}/?import=${compressed}`;
+    const link = `${window.location.origin}${window.location.pathname}#/?import=${encodeURIComponent(compressed)}`;
     
     setGeneratedLink(link);
     setCopied(false);
   };
 
-  const handleCopy = () => {
-    if (!generatedLink) return;
-    navigator.clipboard.writeText(generatedLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      setCopied(true);
+      setCopyError(false);
+    } catch {
+      setCopied(false);
+      setCopyError(true);
+    }
   };
 
   const resetAndClose = () => {
     setGeneratedLink('');
     setCopied(false);
+    setCopyError(false);
     onClose();
   };
 
@@ -57,6 +77,7 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
           className="w-full max-w-md bg-brand-bg retro-border p-6 relative border-t-4 border-t-brand-accent"
         >
           <button 
+            aria-label="Close share dialog"
             onClick={resetAndClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-white"
           >
@@ -82,7 +103,7 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
                     mode === 'collab' ? 'border-brand-accent text-brand-accent bg-brand-accent/10' : 'border-[#333] text-gray-500 hover:border-gray-400'
                   }`}
                 >
-                  <Users size={16} /> COLLAB
+                  <Users size={16} /> SHARE COPY
                 </button>
               </div>
 
@@ -102,8 +123,14 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
               <p className="font-mono text-xs text-gray-500 mb-6 leading-relaxed">
                 {mode === 'gift' 
                   ? "They will receive this tape wrapped as a gift! They'll have to click to unwrap it." 
-                  : "Send this link to a friend. When they open it, it will be added to their collection as a collaborative tape."}
+                  : "Send this link to a friend. They can save their own copy to their shelf."}
               </p>
+
+              {[...(tape.sideA || []), ...(tape.sideB || [])].some(track => track.blob) && (
+                <p className="font-mono text-xs text-gray-400 mb-4">
+                  Audio files from this device will be omitted from the shared tape.
+                </p>
+              )}
 
               <button
                 onClick={handleGenerate}
@@ -121,15 +148,17 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
               </div>
               <h3 className="font-pixel text-sm text-white mb-2">LINK READY!</h3>
               <p className="font-mono text-xs text-gray-400 mb-6">
-                Copy this link and send it to your friend.
+                {copied ? "Link copied." : "Copy this link and send it to your friend."}
               </p>
 
               <div className="flex items-center gap-2 mb-6">
                 <input 
                   type="text" 
+                  aria-label="Share link"
+                  onFocus={(event) => event.target.select()}
                   readOnly 
                   value={generatedLink} 
-                  className="flex-1 bg-[#111] border border-[#333] p-3 text-gray-400 font-mono text-xs outline-none"
+                  className="min-w-0 flex-1 bg-[#111] border border-[#333] p-3 text-gray-400 font-mono text-xs outline-none"
                 />
                 <button 
                   onClick={handleCopy}
@@ -140,6 +169,7 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
                 </button>
               </div>
 
+              {copyError && <p role="status" className="mb-4 text-xs text-white">Select and copy the link manually.</p>}
               <button
                 onClick={resetAndClose}
                 className="text-gray-500 font-mono text-xs underline hover:text-white"

@@ -29,7 +29,7 @@ export const Auth = () => {
         </div>
 
         <motion.div 
-          className="max-w-md w-full bg-[#111]/80 backdrop-blur-xl border border-[#333] rounded-2xl p-8 relative z-10 shadow-2xl"
+          className="studio-card max-w-md w-full bg-[#111]/80 backdrop-blur-xl border border-[#333] rounded-2xl p-8 relative z-10 shadow-2xl"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -44,7 +44,7 @@ export const Auth = () => {
             </motion.div>
             <h1 className="text-3xl font-pixel glow-text mb-4 text-brand-accent">TAPEDECK</h1>
             <p className="text-gray-400 font-mono text-sm leading-relaxed">
-              Your music. Your mixtapes.<br />Your memories.
+              A little home for your music and memories.
             </p>
           </div>
 

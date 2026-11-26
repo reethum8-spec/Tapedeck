@@ -6,14 +6,22 @@ export const MemoryEditorModal = ({ isOpen, onClose, onSave, initialMemory }) =>
   const [type, setType] = useState(initialMemory?.type || 'note');
   const [text, setText] = useState(initialMemory?.text || '');
   const [imageUrl, setImageUrl] = useState(initialMemory?.imageUrl || '');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    if (!text.trim() && !imageUrl.trim()) return;
-    onSave({ type, text, imageUrl: type === 'photo' ? imageUrl : undefined });
-    onClose();
+  const handleSave = async () => {
+    if (saving || (!text.trim() && !imageUrl.trim())) return;
+    setSaving(true);
+    const saved = await onSave({ type, text, imageUrl: type === 'photo' ? imageUrl : undefined });
+    if (saved) {
+      onClose();
+    } else {
+      setSaveError(true);
+      setSaving(false);
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -44,6 +52,7 @@ export const MemoryEditorModal = ({ isOpen, onClose, onSave, initialMemory }) =>
           className="w-full max-w-md bg-brand-bg retro-border p-6 relative max-h-[90vh] overflow-y-auto"
         >
           <button 
+            aria-label="Close memory editor"
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-white"
           >
@@ -51,6 +60,7 @@ export const MemoryEditorModal = ({ isOpen, onClose, onSave, initialMemory }) =>
           </button>
 
           <h2 className="text-xl font-pixel glow-text mb-6">ATTACH MEMORY</h2>
+          {saveError && <p role="alert" className="mb-4 text-sm text-white">Could not save the memory. Please try again.</p>}
 
           <div className="flex gap-4 mb-6">
             <button
@@ -135,6 +145,7 @@ export const MemoryEditorModal = ({ isOpen, onClose, onSave, initialMemory }) =>
 
           <button
             onClick={handleSave}
+            disabled={saving}
             disabled={(!text.trim() && type === 'note') || (type === 'photo' && !imageUrl.trim())}
             className="w-full py-3 bg-brand-accent text-black font-bold font-mono tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
           >

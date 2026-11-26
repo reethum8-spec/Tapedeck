@@ -26,10 +26,12 @@ export const Player = () => {
   const [editingTrackIndex, setEditingTrackIndex] = useState(null);
   const tape = tapes.find(t => t.id === id);
 
-  const handleDeleteTrack = (e, trackIndex) => {
+  const handleDeleteTrack = async (e, trackIndex) => {
     e.stopPropagation();
     if (window.confirm('Delete this track from the tape?')) {
-      removeSongFromTape(tape.id, activeSide, trackIndex);
+      if (!await removeSongFromTape(tape.id, activeSide, trackIndex)) {
+        window.alert("Couldn't remove this track. Please try again.");
+      }
     }
   };
 
@@ -155,15 +157,18 @@ export const Player = () => {
               <button 
                 onClick={toggleLoop} 
                 className={`deck-btn ${isLooping ? '!text-brand-accent !border-brand-accent bg-[#1a1a1a]' : ''}`}
+                aria-label="Toggle Loop"
+                aria-pressed={isLooping}
                 title="Toggle Loop"
               >
                 <Repeat size={18} />
               </button>
-              <button onClick={playPrevTrack} className="deck-btn"><SkipBack size={20} /></button>
-              <button onClick={() => handleSeek('rev')} className="deck-btn"><Rewind size={20} /></button>
+              <button aria-label="Previous track" onClick={playPrevTrack} className="deck-btn"><SkipBack size={20} /></button>
+              <button aria-label="Rewind" onClick={() => handleSeek('rev')} className="deck-btn"><Rewind size={20} /></button>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
+                aria-label={isThisTape && isPlaying ? "Pause" : "Play"}
                 onClick={() => {
                   if (isThisTape) togglePlayPause();
                   else if (tracks.length > 0) playTrack(tape, 0, activeSide);
@@ -172,8 +177,8 @@ export const Player = () => {
               >
                 {isThisTape && isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-0.5" />}
               </motion.button>
-              <button onClick={() => handleSeek('fwd')} className="deck-btn"><FastForward size={20} /></button>
-              <button onClick={playNextTrack} className="deck-btn"><SkipForward size={20} /></button>
+              <button aria-label="Fast forward" onClick={() => handleSeek('fwd')} className="deck-btn"><FastForward size={20} /></button>
+              <button aria-label="Next track" onClick={playNextTrack} className="deck-btn"><SkipForward size={20} /></button>
             </div>
 
             {/* Side Toggle */}
@@ -181,6 +186,7 @@ export const Player = () => {
               {['A', 'B'].map(side => (
                 <motion.button
                   key={side}
+                  aria-pressed={activeSide === side}
                   onClick={() => setActiveSide(side)}
                   whileTap={{ scale: 0.95 }}
                   className={`px-5 py-1.5 rounded-md font-mono text-xs transition-all duration-200 ${
@@ -368,14 +374,12 @@ export const Player = () => {
         </div>
       </div>
 
-      <MemoryEditorModal 
+      {memoryModalOpen && <MemoryEditorModal
         isOpen={memoryModalOpen}
         onClose={() => setMemoryModalOpen(false)}
         initialMemory={editingTrackIndex !== null ? tracks[editingTrackIndex]?.memory : null}
-        onSave={(memory) => {
-          updateTrackMemory(tape.id, activeSide, editingTrackIndex, memory);
-        }}
-      />
+        onSave={(memory) => updateTrackMemory(tape.id, activeSide, editingTrackIndex, memory)}
+      />}
       
       <ShareModal 
         isOpen={shareModalOpen} 

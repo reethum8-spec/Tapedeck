@@ -16,7 +16,7 @@ import { Layout } from './components/Layout';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTape } from './context/TapeContext';
 import { CassetteCanvas } from './components/CassetteCanvas';
-import { Gift, Sparkles, X, Check } from 'lucide-react';
+import { Gift, Sparkles, Check } from 'lucide-react';
 import LZString from 'lz-string';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://tapedeck.onrender.com/api';
@@ -38,12 +38,19 @@ const ImportHandler = () => {
 
   // 1. Capture pending import from URL immediately and save to sessionStorage to avoid losing it during auth redirect
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const pageParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(location.search);
+    const params = hashParams.has('import') || hashParams.has('share') ? hashParams : pageParams;
     const importData = params.get('import');
     const shareId = params.get('share');
     
     if (importData || shareId) {
-      sessionStorage.setItem('pending_import_query', location.search);
+      sessionStorage.setItem('pending_import_query', params.toString());
+      if (pageParams.has('import') || pageParams.has('share')) {
+        const url = new URL(window.location.href);
+        for (const key of ['import', 'share', 'mode', 'sender']) url.searchParams.delete(key);
+        window.history.replaceState(window.history.state, '', url);
+      }
       // Clean URL immediately so redirects don't wipe it
       navigate(location.pathname, { replace: true });
     }
@@ -68,16 +75,18 @@ const ImportHandler = () => {
     if (importData) {
       try {
         const jsonString = LZString.decompressFromEncodedURIComponent(importData);
-        if (jsonString) {
-          const tapeData = JSON.parse(jsonString);
-          tapeData.id = crypto.randomUUID();
-          
-          setPendingTape(tapeData);
-          setImportMode(tapeData.isGift ? 'gift' : 'collab');
-          setSender(tapeData.giftSender || 'A Friend');
-          setUnwrapped(false);
-          setIsUnwrapping(false);
+        if (!jsonString) throw new Error('Empty tape link');
+        const tapeData = JSON.parse(jsonString);
+        if (typeof tapeData?.name !== 'string' || !tapeData.name.trim()) {
+          throw new Error('Invalid tape');
         }
+        tapeData.id = crypto.randomUUID();
+
+        setPendingTape(tapeData);
+        setImportMode(tapeData.isGift ? 'gift' : 'collab');
+        setSender(tapeData.giftSender || 'A Friend');
+        setUnwrapped(false);
+        setIsUnwrapping(false);
       } catch (err) {
         console.error("Failed to parse imported tape:", err);
         alert("This tape link is invalid or corrupted.");
@@ -118,7 +127,7 @@ const ImportHandler = () => {
       };
       fetchSharedTape();
     }
-  }, [isAuthenticated, addTape]);
+  }, [isAuthenticated, location.search]);
 
   const handleClaim = async () => {
     if (!pendingTape) return;
@@ -132,11 +141,11 @@ const ImportHandler = () => {
     }
     
     const saved = await addTape(finalTape);
-    setPendingTape(null);
-    if (saved && saved.id) {
+    if (saved?.id) {
+      setPendingTape(null);
       navigate(`/player/${saved.id}`);
     } else {
-      navigate('/');
+      alert("Couldn't save this tape. Please try again.");
     }
   };
 
@@ -189,7 +198,10 @@ const ImportHandler = () => {
               </div>
 
               {/* Interactive Gift Card / Box */}
-              <motion.div
+              <motion.button
+                type="button"
+                aria-label="Unwrap gift"
+                disabled={isUnwrapping}
                 onClick={handleUnwrap}
                 whileHover={{ y: -8, scale: 1.02 }}
                 animate={isUnwrapping ? { 
@@ -232,7 +244,7 @@ const ImportHandler = () => {
                 <div className="absolute top-2 right-2 text-[#f1c40f] opacity-80">
                   <Sparkles size={16} />
                 </div>
-              </motion.div>
+              </motion.button>
 
               <p className="font-mono text-[10px] text-gray-500 mt-6 tracking-wider animate-pulse">
                 CLICK THE GIFT BOX TO UNWRAP IT

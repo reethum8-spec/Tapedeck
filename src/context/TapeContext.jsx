@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Howl } from 'howler';
-import { v4 as uuidv4 } from 'uuid';
 import { tapeService } from '../services/tapeService';
 
 const TapeContext = createContext();
@@ -124,6 +123,7 @@ export const TapeProvider = ({ children }) => {
         duration: track.duration || 0,
         audioUrl: track.audioUrl || '',
         coverUrl: track.albumArt || '',
+        ...(track.blob ? { blob: track.blob } : {}),
       };
       const savedSong = await tapeService.addSong(songData);
       
@@ -135,56 +135,51 @@ export const TapeProvider = ({ children }) => {
         }
         return t;
       }));
+      return true;
     } catch (err) {
       console.error(err);
+      return false;
     }
   };
 
   const removeSongFromTape = async (tapeId, side, trackIndex) => {
-    let songId = null;
-    setTapes(prev => prev.map(t => {
-      if (t.id === tapeId) {
-        const targetSide = side === 'A' ? 'sideA' : 'sideB';
-        const sideSongs = Array.isArray(t[targetSide]) ? t[targetSide] : [];
-        const updatedSide = [...sideSongs];
-        songId = updatedSide[trackIndex]?._id || updatedSide[trackIndex]?.id;
-        if (songId) {
-          updatedSide.splice(trackIndex, 1);
-        }
-        return ensureArrays({ ...t, [targetSide]: updatedSide });
-      }
-      return t;
-    }));
-    
-    if (songId) {
-      try {
-        await tapeService.deleteSong(songId);
-      } catch (err) {
-        console.error(err);
-      }
+    const sideKey = side === 'A' ? 'sideA' : 'sideB';
+    const track = tapes.find(tape => tape.id === tapeId)?.[sideKey]?.[trackIndex];
+    const songId = track?._id || track?.id;
+    if (!songId) return false;
+
+    try {
+      if (!await tapeService.deleteSong(songId)) return false;
+      if (currentTape?.id === tapeId) stopPlayback();
+      setTapes(prev => prev.map(tape => tape.id === tapeId ? {
+        ...tape,
+        [sideKey]: tape[sideKey].filter(song => (song._id || song.id) !== songId),
+      } : tape));
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   };
 
   const updateTrackMemory = async (tapeId, side, trackIndex, memory) => {
-    let songId = null;
-    setTapes(prev => prev.map(t => {
-      if (t.id === tapeId) {
-        const sideSongs = Array.isArray(t[side]) ? t[side] : [];
-        const updatedSide = [...sideSongs];
-        songId = updatedSide[trackIndex]?._id || updatedSide[trackIndex]?.id;
-        if (songId) {
-          updatedSide[trackIndex] = { ...updatedSide[trackIndex], memory };
-        }
-        return ensureArrays({ ...t, [side]: updatedSide });
-      }
-      return t;
-    }));
-    if (songId) {
-      try {
-        await tapeService.updateSong(songId, { memory });
-      } catch (err) {
-        console.error(err);
-      }
+    const sideKey = side === 'A' ? 'sideA' : 'sideB';
+    const track = tapes.find(tape => tape.id === tapeId)?.[sideKey]?.[trackIndex];
+    const songId = track?._id || track?.id;
+    if (!songId) return false;
+
+    try {
+      const savedSong = await tapeService.updateSong(songId, { memory });
+      if (!savedSong) return false;
+
+      setTapes(prev => prev.map(tape => tape.id === tapeId ? {
+        ...tape,
+        [sideKey]: tape[sideKey].map(song => (song._id || song.id) === songId ? savedSong : song),
+      } : tape));
+      return true;
+    } catch (err) {
+      console.error(err);
+      return false;
     }
   };
 
@@ -238,9 +233,6 @@ export const TapeProvider = ({ children }) => {
       finalAudioUrl = URL.createObjectURL(track.blob);
       activeBlobUrlRef.current = finalAudioUrl;
     }
-
-    // Use a ref so the callback always sees the latest value
-    const currentLooping = isLoopingRef.current;
 
     const sound = new Howl({
       src: [finalAudioUrl],

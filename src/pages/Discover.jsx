@@ -158,7 +158,7 @@ export const Discover = () => {
     }
   };
 
-  const handleAddLocalTrack = (e) => {
+  const handleAddLocalTrack = async (e) => {
     e.preventDefault();
     if (!localFile || !localTitle) return;
 
@@ -172,7 +172,7 @@ export const Discover = () => {
       albumArt: '', 
     };
 
-    addToTape(newTrack, e);
+    if (!await addToTape(newTrack, e)) return;
     
     // Reset form
     setLocalFile(null);
@@ -181,7 +181,7 @@ export const Discover = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const addToTape = (track, e) => {
+  const addToTape = async (track, e) => {
     e?.stopPropagation(); 
     
     if (!selectedTape) {
@@ -195,17 +195,20 @@ export const Discover = () => {
     const sideA = tape.sideA || [];
     const sideB = tape.sideB || [];
 
-    if (sideA.length < 5) {
-      addSongToTape(tape.id, 'A', track);
-      showNotification(`Added to ${tape.name} (Side A)`);
-    } else if (sideB.length < 5) {
-      addSongToTape(tape.id, 'B', track);
-      showNotification(`Added to ${tape.name} (Side B)`);
-    } else {
+    const side = sideA.length < 5 ? 'A' : 'B';
+    if (side === 'B' && sideB.length >= 5) {
       showNotification(`Tape "${tape.name}" is full (10 tracks max)!`);
-      return;
+      return false;
     }
+
+    if (!await addSongToTape(tape.id, side, track)) {
+      showNotification("Couldn't save this track. Please try again.");
+      return false;
+    }
+
+    showNotification(`Added to ${tape.name} (Side ${side})`);
     setAddedTracks(prev => new Set(prev).add(track.jamendoId));
+    return true;
   };
 
   return (
@@ -219,7 +222,7 @@ export const Discover = () => {
             exit={{ opacity: 0, y: -50, x: '-50%' }}
             className="fixed top-20 left-1/2 z-50 bg-brand-accent text-black px-6 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(93,202,165,0.4)] tracking-wide font-mono text-sm"
           >
-            {notification}
+            <span role="status">{notification}</span>
           </motion.div>
         )}
       </AnimatePresence>

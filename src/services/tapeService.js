@@ -20,6 +20,31 @@ const getAuthHeaders = () => {
   };
 };
 
+const syncingTapes = new Set();
+let pendingWrite = Promise.resolve();
+
+const writeTapes = (update) => {
+  const write = pendingWrite.then(async () => {
+    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
+    const result = update(tapes);
+    await localforage.setItem('tapedeck_tapes', tapes);
+    return result;
+  });
+  pendingWrite = write.catch(() => {});
+  return write;
+};
+
+const updateRemoteTape = (tape, updates) => {
+  const serverId = tape._id || (!tape.isLocalOnly && tape.id);
+  const headers = getAuthHeaders();
+  if (!serverId || !headers.Authorization || headers.Authorization === 'Bearer local-offline-token') return;
+  fetch(`${API_URL}/playlists/${serverId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(updates),
+  }).catch(err => console.warn('Backend update failed, saved locally.', err));
+};
+
 export const tapeService = {
   async initDB() {},
 
@@ -58,24 +83,27 @@ export const tapeService = {
       if (json.success) {
         const serverTapes = json.data;
         
-        // Re-read local tapes after the fetch in case the user created/edited tapes while Render was asleep
-        const freshLocalTapes = (await localforage.getItem('tapedeck_tapes')) || [];
-        
-        // Background sync: Find any locals that haven't been pushed to server yet.
-        const unsyncedLocals = freshLocalTapes.filter(lt => lt.isLocalOnly);
-        // Push them to backend asynchronously without blocking the initial load
-        unsyncedLocals.forEach(async (tape) => {
-          try {
-            await this.createTape(tape, true); // true = skip local push
-          } catch(e) {}
+        const { merged, unsyncedLocals } = await writeTapes(tapes => {
+          const unsyncedLocals = tapes.filter(tape => tape.isLocalOnly);
+          const merged = serverTapes.map(serverTape => {
+            const serverId = serverTape.id || serverTape._id;
+            const cached = tapes.find(tape => !tape.isLocalOnly && (tape._id || tape.id) === serverId);
+            return cached ? {
+              ...serverTape,
+              id: cached.id,
+              _id: serverId,
+              journalEntry: cached.journalEntry,
+              lockedUntil: cached.lockedUntil,
+              sideA: cached.sideA ?? serverTape.sideA,
+              sideB: cached.sideB ?? serverTape.sideB,
+            } : { ...serverTape, id: serverId };
+          }).concat(unsyncedLocals);
+          tapes.splice(0, tapes.length, ...merged);
+          return { merged, unsyncedLocals };
         });
-
-        // Clean up server tapes to ensure they have an `id` property
-        const cleanServerTapes = serverTapes.map(t => ({...t, id: t.id || t._id}));
-
-        // The authoritative list is serverTapes + any remaining unsynced locals
-        const merged = [...cleanServerTapes, ...unsyncedLocals];
-        await localforage.setItem('tapedeck_tapes', merged);
+        for (const tape of unsyncedLocals) {
+          this.createTape(tape, true).catch(err => console.warn('Backend sync failed.', err));
+        }
         return merged;
       }
     } catch (err) {
@@ -87,6 +115,8 @@ export const tapeService = {
   async createTape(tapeData, skipLocal = false) {
     const newTape = {
       ...tapeData,
+      sideA: (tapeData.sideA || []).map(song => ({ ...song, _id: uuidv4() })),
+      sideB: (tapeData.sideB || []).map(song => ({ ...song, _id: uuidv4() })),
       id: tapeData.id || uuidv4(),
       isLocalOnly: true,
       createdAt: new Date().toISOString(),
@@ -94,132 +124,115 @@ export const tapeService = {
     };
 
     if (!skipLocal) {
-      const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-      tapes.push(newTape);
-      await localforage.setItem('tapedeck_tapes', tapes);
+      await writeTapes(tapes => tapes.push(newTape));
     }
 
-    // Fire and forget
+    const headers = getAuthHeaders();
+    if (!headers.Authorization || headers.Authorization === 'Bearer local-offline-token') return newTape;
+
+    if (syncingTapes.has(newTape.id)) return newTape;
+    syncingTapes.add(newTape.id);
+    const metadata = { ...tapeData };
+    delete metadata.sideA;
+    delete metadata.sideB;
     fetch(`${API_URL}/playlists`, {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(tapeData)
+      headers,
+      body: JSON.stringify(metadata),
     }).then(async res => {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const json = await res.json();
-        if (json.success) {
-          const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-          const index = tapes.findIndex(t => t.id === newTape.id);
-          if (index !== -1) {
-            tapes[index] = { ...json.data, id: json.data.id || json.data._id };
-            await localforage.setItem('tapedeck_tapes', tapes);
-          }
-        }
+      if (!res.ok) return;
+      const json = await res.json();
+      const serverId = json.data?._id || json.data?.id;
+      if (!json.success || !serverId) return;
+
+      const linked = await writeTapes(tapes => {
+        const tape = tapes.find(item => item.id === newTape.id);
+        if (!tape) return false;
+        tape._id = serverId;
+        tape.isLocalOnly = false;
+        return true;
+      });
+      if (!linked) {
+        await fetch(`${API_URL}/playlists/${serverId}`, { method: 'DELETE', headers });
       }
-    }).catch(err => console.warn("Backend create failed, saved locally.", err));
+    }).catch(err => console.warn('Backend create failed, saved locally.', err))
+      .finally(() => syncingTapes.delete(newTape.id));
 
     return newTape;
   },
 
   async updateTape(id, updates) {
-    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-    const index = tapes.findIndex(t => t.id === id || t._id === id);
-    if (index !== -1) {
+    const tape = await writeTapes(tapes => {
+      const index = tapes.findIndex(item => item.id === id || item._id === id);
+      if (index === -1) throw new Error('Tape not found locally');
       tapes[index] = { ...tapes[index], ...updates, updatedAt: new Date().toISOString() };
-      await localforage.setItem('tapedeck_tapes', tapes);
-    }
-
-    // Fire and forget
-    fetch(`${API_URL}/playlists/${id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(updates)
-    }).catch(err => console.warn("Backend update failed, saved locally.", err));
-
-    return tapes[index];
+      return tapes[index];
+    });
+    updateRemoteTape(tape, updates);
+    return tape;
   },
 
   async deleteTape(id) {
-    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-    const filtered = tapes.filter(t => t.id !== id && t._id !== id);
-    await localforage.setItem('tapedeck_tapes', filtered);
-
-    // Fire and forget
-    fetch(`${API_URL}/playlists/${id}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-    }).catch(err => {});
-    
+    const tape = await writeTapes(tapes => {
+      const index = tapes.findIndex(item => item.id === id || item._id === id);
+      return index === -1 ? null : tapes.splice(index, 1)[0];
+    });
+    const serverId = tape?._id || (tape && !tape.isLocalOnly && tape.id);
+    const headers = getAuthHeaders();
+    if (serverId && headers.Authorization && headers.Authorization !== 'Bearer local-offline-token') {
+      fetch(`${API_URL}/playlists/${serverId}`, {
+        method: 'DELETE',
+        headers,
+      }).catch(err => console.warn('Backend delete failed.', err));
+    }
     return { success: true };
   },
 
   async addSong(songData) {
-    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-    const tapeIndex = tapes.findIndex(t => t.id === songData.playlistId || t._id === songData.playlistId);
-    if (tapeIndex === -1) throw new Error("Tape not found locally");
-    
-    const newSong = { ...songData, _id: uuidv4(), id: uuidv4() };
-    const side = songData.side === 'A' ? 'sideA' : 'sideB';
-    tapes[tapeIndex][side].push(newSong);
-    tapes[tapeIndex].updatedAt = new Date().toISOString();
-    await localforage.setItem('tapedeck_tapes', tapes);
+    return writeTapes(tapes => {
+      const tape = tapes.find(item => item.id === songData.playlistId || item._id === songData.playlistId);
+      if (!tape) throw new Error('Tape not found locally');
 
-    // Sync whole tape to backend
-    this.updateTape(tapes[tapeIndex].id || tapes[tapeIndex]._id, { [side]: tapes[tapeIndex][side] });
-
-    return newSong;
+      const side = songData.side === 'A' ? 'sideA' : 'sideB';
+      const songs = tape[side] ?? [];
+      if (songs.length >= 5) throw new Error('This side of the tape is full');
+      const id = uuidv4();
+      const song = { ...songData, _id: id, id };
+      tape[side] = [...songs, song];
+      tape.updatedAt = new Date().toISOString();
+      return song;
+    });
   },
 
   async updateSong(id, updates) {
-    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-    let foundSong = null;
-    let foundTape = null;
-    let foundSide = null;
-    
-    for (const tape of tapes) {
-      for (const side of ['sideA', 'sideB']) {
-        const songIndex = tape[side].findIndex(s => s._id === id || s.id === id);
-        if (songIndex !== -1) {
-          tape[side][songIndex] = { ...tape[side][songIndex], ...updates };
-          foundSong = tape[side][songIndex];
-          foundTape = tape;
-          foundSide = side;
-          break;
+    return writeTapes(tapes => {
+      for (const tape of tapes) {
+        for (const side of ['sideA', 'sideB']) {
+          const songs = tape[side] ?? [];
+          const index = songs.findIndex(song => song._id === id || song.id === id);
+          if (index === -1) continue;
+          songs[index] = { ...songs[index], ...updates };
+          tape.updatedAt = new Date().toISOString();
+          return songs[index];
         }
       }
-      if (foundSong) break;
-    }
-    
-    if (foundSong) {
-      foundTape.updatedAt = new Date().toISOString();
-      await localforage.setItem('tapedeck_tapes', tapes);
-      this.updateTape(foundTape.id || foundTape._id, { [foundSide]: foundTape[foundSide] });
-    }
-    return foundSong;
+      return null;
+    });
   },
 
   async deleteSong(id) {
-    const tapes = (await localforage.getItem('tapedeck_tapes')) || [];
-    let found = false;
-    
-    for (const tape of tapes) {
-      for (const side of ['sideA', 'sideB']) {
-        const initialLen = tape[side].length;
-        tape[side] = tape[side].filter(s => s._id !== id && s.id !== id);
-        if (tape[side].length < initialLen) {
-          found = true;
+    return writeTapes(tapes => {
+      for (const tape of tapes) {
+        for (const side of ['sideA', 'sideB']) {
+          const songs = tape[side] ?? [];
+          const index = songs.findIndex(song => song._id === id || song.id === id);
+          if (index === -1) continue;
+          songs.splice(index, 1);
           tape.updatedAt = new Date().toISOString();
-          this.updateTape(tape.id || tape._id, { [side]: tape[side] });
+          return true;
         }
       }
-    }
-    
-    await localforage.setItem('tapedeck_tapes', tapes);
-    return { success: true };
+      return false;
+    });
   },
-
-  async getCollaborativeLink(id) {
-    return `${window.location.origin}/#/collab/${id}`;
-  }
 };

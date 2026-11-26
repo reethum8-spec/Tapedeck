@@ -434,3 +434,60 @@ canvas.pixelated {
   .rotate-y-180 { transform: rotateY(180deg); }
   .handwritten-font { font-family: 'Caveat', cursive; }
 }
+
+/* Printed cassette labels on a midnight-plum studio backdrop. */
+:root {
+  --color-brand-bg: #191622;
+  --color-brand-accent: #f5c49d;
+  --color-brand-dark: #272131;
+}
+body {
+  background-image: radial-gradient(ellipse at top left, #40304988, transparent 54rem);
+}
+.shelf-label, .studio-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.shelf-label {
+  padding: clamp(2rem, 6vw, 4.5rem);
+  color: #302532;
+  background: repeating-linear-gradient(0deg, transparent 0 23px, #66516618 23px 24px), #fff0dc;
+  border: 1px solid #eed5bd;
+  border-radius: 1.6rem 1.6rem .5rem .5rem;
+  box-shadow: 0 6px 0 #ad7e9d;
+}
+.shelf-label::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  right: -6rem;
+  top: -2rem;
+  width: clamp(13rem, 35vw, 27rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #392a42 0 2%, #f6bc8c 2% 15%, #a97398 15% 17%, transparent 17%), repeating-radial-gradient(circle, #48334e 0 3px, #654863 4px 5px);
+  box-shadow: -10px 10px 0 #d99b92;
+}
+.shelf-label h1, .studio-card h1 {
+  font-family: Georgia, serif;
+  font-weight: bold;
+  letter-spacing: -.055em;
+  text-shadow: none;
+}
+.shelf-label h1 { font-size: clamp(2.8rem, 6vw, 5.2rem); line-height: 1.02; }
+.shelf-label p { color: #67485d; max-width: 65%; }
+.shelf-label h1 { max-width: 65%; }
+.studio-card {
+  background: linear-gradient(150deg, #382b41, #201b29 68%);
+  border: 1px solid #735669;
+  border-top: .45rem solid #f1c19d;
+  box-shadow: 0 6px 0 #553b52, 0 24px 65px #100d1880;
+}
+.studio-card h1 { color: #ffdfb9; font-size: clamp(2.6rem, 8vw, 4rem); }
+:focus-visible { outline: 3px solid #dbacfa; outline-offset: 3px; }
+@media (max-width: 600px) {
+  .shelf-label { padding: 1.6rem 1.3rem; }
+  .shelf-label::after { right: -9rem; }
+  .shelf-label p, .shelf-label h1 { max-width: 80%; }
+}

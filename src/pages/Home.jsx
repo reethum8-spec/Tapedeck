@@ -124,7 +124,7 @@ export const Home = () => {
     <AnimatedPage>
       <BackgroundVinyl />
       {/* Hero Section */}
-      <div className="text-center mb-12 pt-8">
+      <div className="shelf-label mb-12">
         <motion.p
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -138,7 +138,7 @@ export const Home = () => {
           transition={{ delay: 0.1 }}
           className="text-3xl md:text-5xl font-pixel glow-text mb-4 tracking-tight"
         >
-          YOUR SHELF
+          Your mixtape shelf
         </motion.h1>
         <p className="text-gray-500 font-mono text-sm tracking-widest">
           {tapes.length === 0 ? 'NO TAPES YET — CREATE YOUR FIRST MIXTAPE' : `${tapes.length} TAPE${tapes.length !== 1 ? 'S' : ''} IN COLLECTION`}
@@ -247,7 +247,7 @@ export const Home = () => {
         >
           <div className="inline-block retro-border p-8 max-w-md">
             <div className="text-6xl mb-4">📼</div>
-            <h3 className="text-brand-accent font-pixel text-sm mb-3">EMPTY SHELF</h3>
+            <h3 className="text-brand-accent font-pixel text-sm mb-3">Your first mixtape starts here</h3>
             <p className="text-gray-500 text-sm mb-6 font-mono leading-relaxed">
               Head to <span className="text-brand-accent">DISCOVER</span> to find music,
               or <span className="text-brand-accent">CREATE</span> a blank tape and fill it up.
