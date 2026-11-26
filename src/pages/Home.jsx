@@ -145,6 +145,24 @@ export const Home = () => {
         </p>
       </div>
 
+      <label className="inline-flex cursor-pointer mb-6 text-brand-accent font-mono">
+        Open tape file
+        <input type="file" accept=".tapedeck" className="ml-3 max-w-full" onChange={async event => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (!file) return;
+          try {
+            const tape = JSON.parse(await file.text());
+            if (typeof tape?.name !== 'string' || ![tape.sideA, tape.sideB].every(side =>
+              Array.isArray(side) && side.every(track => typeof track?.title === 'string' && typeof track.audioUrl === 'string')
+            )) throw new Error('Invalid tape file');
+            window.dispatchEvent(new CustomEvent('open-tape-file', { detail: tape }));
+          } catch {
+            window.alert('This tape file could not be opened.');
+          }
+        }} />
+      </label>
+
       {/* Cassette Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 justify-items-center">
         {tapes.map((tape, i) => {

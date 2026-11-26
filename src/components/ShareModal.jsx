@@ -14,19 +14,37 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
 
   if (!isOpen || !tape) return null;
 
-  const handleGenerate = () => {
+  const hasFiles = [...(tape.sideA || []), ...(tape.sideB || [])].some(track => track.blob || track.audioUrl?.startsWith('data:'));
+  const handleGenerate = async () => {
+    try {
+      await generateGift();
+    } catch {
+      window.alert('Could not prepare this tape. Please try again.');
+    }
+  };
+
+  const generateGift = async () => {
     const exportTape = { ...tape };
     delete exportTape.id;
     delete exportTape._id;
     delete exportTape.userId;
     for (const side of ['sideA', 'sideB']) {
-      exportTape[side] = (tape[side] || []).filter(track => !track.blob).map(track => {
+      exportTape[side] = await Promise.all((tape[side] || []).map(async track => {
         const sharedTrack = { ...track };
+        if (track.blob) {
+          sharedTrack.audioUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(track.blob);
+          });
+          delete sharedTrack.blob;
+        }
         delete sharedTrack._id;
         delete sharedTrack.id;
         delete sharedTrack.playlistId;
         return sharedTrack;
-      });
+      }));
     }
 
 
@@ -42,6 +60,15 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
     }
 
     const jsonString = JSON.stringify(exportTape);
+    if (hasFiles) {
+      const url = URL.createObjectURL(new Blob([jsonString], { type: 'application/json' }));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = (tape.name || 'Gift') + '.tapedeck';
+      download.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    }
     const compressed = LZString.compressToEncodedURIComponent(jsonString);
     const link = `${window.location.origin}${window.location.pathname}#/?import=${encodeURIComponent(compressed)}`;
     
@@ -126,9 +153,9 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
                   : "Send this link to a friend. They can save their own copy to their shelf."}
               </p>
 
-              {[...(tape.sideA || []), ...(tape.sideB || [])].some(track => track.blob) && (
+              {hasFiles && (
                 <p className="font-mono text-xs text-gray-400 mb-4">
-                  Audio files from this device will be omitted from the shared tape.
+                  Send the downloaded tape file to your recipient. On their TapeDeck shelf, choose Open tape file to load the songs.
                 </p>
               )}
 
@@ -138,7 +165,7 @@ export const ShareModal = ({ isOpen, onClose, tape }) => {
                   mode === 'gift' ? 'bg-[#f1c40f]' : 'bg-brand-accent'
                 }`}
               >
-                CREATE LINK
+                {hasFiles ? 'DOWNLOAD TAPE FILE' : 'CREATE LINK'}
               </button>
             </>
           ) : (

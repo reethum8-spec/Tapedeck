@@ -129,6 +129,21 @@ const ImportHandler = () => {
     }
   }, [isAuthenticated, location.search]);
 
+  useEffect(() => {
+    const openFile = event => {
+      const tape = { ...event.detail, id: crypto.randomUUID() };
+      delete tape._id;
+      delete tape.userId;
+      setPendingTape(tape);
+      setSender(tape.giftSender || 'A Friend');
+      setImportMode(tape.isGift ? 'gift' : 'collab');
+      setIsUnwrapping(false);
+      setUnwrapped(false);
+    };
+    window.addEventListener('open-tape-file', openFile);
+    return () => window.removeEventListener('open-tape-file', openFile);
+  }, []);
+
   const handleClaim = async () => {
     if (!pendingTape) return;
     const finalTape = { ...pendingTape };
